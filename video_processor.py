@@ -2,16 +2,16 @@ import cv2
 import numpy as np
 import sys
 
+from src.squat_analyzer import SquatAnalyzer
 from src.pose_estimator import PoseEstimator
 from src.angle_engine import get_all_angles, get_visibility, LANDMARKS
 from src.temporal_engine import TemporalEngine
 from src.rep_counter import RepCounter
-from src.rep_analyzer import RepAnalyzer
 from src.form_analyzer import FormAnalyzer
 from src.session_analyzer import SessionAnalyzer
-from src.thresholds import TOP_ANGLE, BOTTOM_ANGLE, DESCENT_TRIGGER, ASCENT_THRESHOLD
 
 
+# ================= HELPER =================
 def get_elbow(landmarks, angles):
     left_visible = get_visibility(landmarks, [
         LANDMARKS['left_shoulder'],
@@ -32,13 +32,13 @@ def get_elbow(landmarks, angles):
     return None
 
 
-def process_video(video_path, output_path):
-
+# ================= VIDEO =================
+def process_video(video_path, output_path, exercise="pushup"):
     cap = cv2.VideoCapture(video_path)
 
-    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps    = int(cap.get(cv2.CAP_PROP_FPS))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
 
     out = cv2.VideoWriter(
         output_path,
@@ -48,16 +48,25 @@ def process_video(video_path, output_path):
     )
 
     estimator = PoseEstimator()
-    temporal = TemporalEngine()
-    counter = RepCounter()
-    analyzer = FormAnalyzer()
-    session = SessionAnalyzer()  # Aggregate all reps
+    session = SessionAnalyzer()
+
+    print(f"Running exercise: {exercise}")
+
+    if exercise == "pushup":
+        temporal = TemporalEngine()
+        counter = RepCounter()
+        analyzer = FormAnalyzer()
+    else:
+        from src.squat_rep_counter import SquatRepCounter
+        from src.squat_temporal_engine import SquatTemporalEngine
+
+        temporal = SquatTemporalEngine()
+        counter = SquatRepCounter()
+        squat_analyzer = SquatAnalyzer()
 
     reps = 0
-    last_feedback = []
-    
     frame_count = 0
-    angle_samples = []  # DEBUG
+    squat_history = []
 
     while True:
         ret, frame = cap.read()
@@ -65,6 +74,7 @@ def process_video(video_path, output_path):
             break
 
         frame_count += 1
+        stage = "N/A"
 
         results = estimator.process_frame(frame)
         landmarks = estimator.get_landmarks(results, frame.shape)
@@ -74,364 +84,306 @@ def process_video(video_path, output_path):
             out.write(frame)
             continue
 
-        elbow = get_elbow(landmarks, angles)
+        # ================= PUSHUPS =================
+        if exercise == "pushup":
+            angle = get_elbow(landmarks, angles)
+            smooth_angle = temporal.smooth(angle)
 
-        # TRACK MOTION
-        smooth_angle = temporal.smooth(elbow)
-        stage = temporal.detect_stage(smooth_angle)
-        
-        # DEBUG: Sample angles every 50 frames (more frequent)
-        if frame_count % 50 == 0 and smooth_angle:
-            angle_samples.append(smooth_angle)
-            # Show which arm is being tracked
-            left_elbow = angles.get('left_elbow')
-            right_elbow = angles.get('right_elbow')
-            print(f"[F{frame_count:3d}] Angle:{smooth_angle:6.1f}° (L:{left_elbow or 'N/A':>5} R:{right_elbow or 'N/A':>5}) | State:{counter.state}", flush=True)
+            if smooth_angle is not None:
+                stage = temporal.detect_stage(smooth_angle)
 
-        # ALWAYS COLLECT
-        analyzer.collect(landmarks, angles)
+            # DEBUG
+            if frame_count % 50 == 0 and smooth_angle is not None:
+                left = angles.get('left_elbow')
+                right = angles.get('right_elbow')
+                print(f"[F{frame_count}] Angle:{smooth_angle:.1f}° (L:{left} R:{right}) | State:{counter.state}")
 
-        # COUNT REPS (assume already in plank)
-        if counter.update(smooth_angle):
-            reps += 1
+            analyzer.collect(landmarks, angles)
 
-            feedback = analyzer.evaluate()
-            
-            # Extract structured data for session analysis
-            from src.form_standards import assess_injury_risk, get_form_quality_score
-            
-            elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
-            hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
-            
-            analysis_angles = {
-                'left_elbow': min(elbows) if elbows else None,
-                'left_hip': min(hips) if hips else None,
-            }
-            
-            # Extract bottom landmarks
-            bottom_landmarks = None
-            if elbows:
-                min_elbow_idx = elbows.index(min(elbows))
-                bottom_landmarks = analyzer.rep_angles[min_elbow_idx]['landmarks']
-            
-            risk_assessment = assess_injury_risk(analysis_angles, bottom_landmarks)
-            score = get_form_quality_score(risk_assessment)
-            
-            rep_data = {
-                'rep_num': reps,
-                'score': score,
-                'issues': risk_assessment.get('issues', []),
-                'flags': risk_assessment.get('flags', []),
-                'feedback': feedback
-            }
-            
-            session.add_rep(rep_data)
-            
-            # ─── BRIEF PER-REP FEEDBACK ────────────────────────
-            print(f"\n[REP {reps}] Score: {score}/100", flush=True)
-            
-            # Show positives first
-            positives = [f for f in risk_assessment['feedback'] if "[GOOD]" in f]
-            if positives:
-                print(f"  ✓ {positives[0].replace('[GOOD] ', '')}", flush=True)
-            else:
-                print(f"  ✓ Form acceptable", flush=True)
-            
-            # Show issues if any
-            if risk_assessment['issues']:
-                for issue in risk_assessment['issues'][:2]:  # Show top 2 issues
-                    print(f"  ⚠ {issue.replace('_', ' ').title()}", flush=True)
-            
-            last_feedback = [f"Rep {reps}: {score}/100"]
+            if counter.update(smooth_angle):
+                reps += 1
 
-            analyzer.reset()
-
-            analyzer.reset()
-
-        # DRAW
-        frame = estimator.draw_skeleton(frame, results)
-
-        # UI
-        cv2.putText(frame, f"Reps: {reps}", (20,40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-
-        cv2.putText(frame, f"Stage: {stage}", (20,80),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
-
-        y = 120
-        for msg in last_feedback:
-            cv2.putText(frame, msg, (20,y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
-            y += 30
-
-        out.write(frame)
-
-    # ─── FINALIZE IN-PROGRESS REP ────────────────────────
-    if counter.state == "DOWN" and len(counter.angles_in_rep) > 10:
-        if counter.update(None):  # Finalize video-end rep
-            reps += 1
-            analyzer.collect(None, None)  # Empty collect to mark completion
-            try:
-                feedback = analyzer.evaluate()
-                
-                # Extract structured data
                 from src.form_standards import assess_injury_risk, get_form_quality_score
-                
+
                 elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
                 hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
-                
+
                 analysis_angles = {
                     'left_elbow': min(elbows) if elbows else None,
                     'left_hip': min(hips) if hips else None,
                 }
-                
-                bottom_landmarks = None
-                if elbows:
-                    min_elbow_idx = elbows.index(min(elbows))
-                    bottom_landmarks = analyzer.rep_angles[min_elbow_idx]['landmarks']
-                
-                risk_assessment = assess_injury_risk(analysis_angles, bottom_landmarks)
-                score = get_form_quality_score(risk_assessment)
-                
-                # Show brief feedback for final rep
-                print(f"\n[REP {reps}] Score: {score}/100", flush=True)
-                positives = [f for f in risk_assessment['feedback'] if "[GOOD]" in f]
-                if positives:
-                    print(f"  ✓ {positives[0].replace('[GOOD] ', '')}", flush=True)
-                else:
-                    print(f"  ✓ Form acceptable", flush=True)
-                
-                if risk_assessment['issues']:
-                    for issue in risk_assessment['issues'][:2]:
-                        print(f"  ⚠ {issue.replace('_', ' ').title()}", flush=True)
-                
-                rep_data = {
+
+                risk = assess_injury_risk(analysis_angles, None)
+                score = get_form_quality_score(risk)
+
+                session.add_rep({
                     'rep_num': reps,
                     'score': score,
-                    'issues': risk_assessment.get('issues', []),
-                    'flags': risk_assessment.get('flags', []),
-                    'feedback': feedback
-                }
-                
-                session.add_rep(rep_data)
-                
-            except:
-                pass
+                    'issues': risk.get('issues', []),
+                    'feedback': risk.get('feedback', [])
+                })
+
+                print(f"\n[REP {reps}] Score: {score}/100")
+
+                positives = [f for f in risk['feedback'] if "[GOOD]" in f]
+                if positives:
+                    print(f"  ✓ {positives[0].replace('[GOOD] ', '')}")
+                else:
+                    print("  ✓ Form acceptable")
+
+                for issue in risk['issues'][:2]:
+                    print(f"  ⚠ {issue.replace('_', ' ').title()}")
+
+                analyzer.reset()
+
+        # ================= SQUATS =================
+        else:
+            angle = angles.get('left_knee') or angles.get('right_knee')
+            smooth_angle = temporal.smooth(angle)
+
+            if smooth_angle is not None:
+                stage = temporal.detect_stage(smooth_angle)
+
+            if frame_count % 50 == 0 and smooth_angle is not None:
+                print(f"[F{frame_count}] Knee:{smooth_angle:.1f}° | State:{counter.state}")
+
+            if counter.update(smooth_angle,landmarks):
+                reps += 1
+                rep_angles = counter.get_last_rep()
+
+                if rep_angles:
+                    landmarks_seq = counter.get_last_landmarks()
+
+                    result = squat_analyzer.analyze(rep_angles, landmarks_seq)
+
+                    print(f"\n[SQUAT {reps}] Score: {result['score']}/100")
+
+                    print(f"  → Knee Angle: {result['knee_angle']:.1f}°")
+
+                    for fb in result["feedback"]:
+                        print(f"  ✓ {fb}")
+
+                    for issue in result["issues"][:3]:
+                        print(f"  ⚠ {issue.replace('_', ' ').title()}")
+                        
+
+                    squat_history.append({
+                        "score": result["score"],
+                        "issues": result["issues"]
+                    })
+                else:
+                    print(f"\n[SQUAT {reps}] Completed")
+
+        # ================= DRAW =================
+        frame = estimator.draw_skeleton(frame, results)
+
+        cv2.putText(frame, f"{exercise.upper()}", (20, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
+
+        cv2.putText(frame, f"Reps: {reps}", (20, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        cv2.putText(frame, f"Stage: {stage}", (20, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+        out.write(frame)
 
     cap.release()
     out.release()
 
-    # ═══════════════════════════════════════════════════════════
-    # GENERATE CONSOLIDATED SESSION REPORT
-    # ═══════════════════════════════════════════════════════════
-    session_report = session.analyze()
-    
-    for line in session_report['feedback']:
-        print(line, flush=True)
-    
-    print(f"\n{'='*60}")
+# ================= SUMMARY =================
+
+# ===== PUSHUP SUMMARY =====
+    if exercise == "pushup":
+        report = session.analyze()
+
+        print("\n" + "="*50)
+        print(f"SESSION SUMMARY - {reps} Reps Completed")
+        print("="*50)
+
+    # SAFE SCORE
+        avg_score = report.get("avg_score") or report.get("average_score") or report.get("overall_score")
+
+        if avg_score is None:
+            scores = []
+            if hasattr(session, "reps"):
+                scores = [r.get("score", 0) for r in session.reps]
+            avg_score = sum(scores) // len(scores) if scores else 0
+
+        print(f"Overall Quality: {avg_score}/100")
+
+    # ISSUES
+        if report.get("issues"):
+            print("\n🎯 PRIMARY FORM ISSUES:")
+            for issue, count in report["issues"].items():
+                print(f"  • {issue}: {count}/{reps} reps")
+
+    # TIPS
+        print("\n💡 COACH TIPS:")
+        for tip in report.get("feedback", []):
+            print(f"  → {tip}")
+
+    # ANGLES
+        all_angles = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
+        if all_angles:
+            print(f"\nAngle range: {min(all_angles):.1f}° - {max(all_angles):.1f}°")
+
+
+# ===== SQUAT SUMMARY =====
+    elif exercise == "squat" and squat_history:
+        print("\n" + "="*50)
+        print(f"SESSION SUMMARY - {reps} Reps Completed")
+        print("="*50)
+
+        avg_score = sum(r["score"] for r in squat_history) // len(squat_history)
+        print(f"Overall Quality: {avg_score}/100")
+
+        issue_count = {}
+        for rep in squat_history:
+            for issue in rep["issues"]:
+                issue_count[issue] = issue_count.get(issue, 0) + 1
+
+        if issue_count:
+            print("\n🎯 PRIMARY ISSUES:")
+            for k, v in issue_count.items():
+                readable = k.replace('_', ' ').title()
+                print(f"  • {readable}: {v}/{len(squat_history)} reps")
+        print("\n💡 COACH TIP:")
+        if not issue_count:
+            print("  → Excellent form! Maintain consistency.")
+        else:
+            if "shallow_squat" in issue_count:
+                print("  → Go deeper (target <90° knee angle)")
+            if "poor_hip_hinge" in issue_count:
+                print("  → Push hips back more")
+            if "back_rounding" in issue_count:
+                print("  → Keep chest up and spine neutral")
+            print(f"\nTotal reps analyzed: {len(squat_history)}")
+
+
+    print("\n==============================")
     print(f"Total reps: {reps}")
-    print(f"{'='*60}")
-    
-    # DEBUG: Show angle details
-    if angle_samples:
-        print(f"Angle range: {min(angle_samples):.1f}° - {max(angle_samples):.1f}°")
-        print(f"Avg angle: {sum(angle_samples)/len(angle_samples):.1f}°")
-
-
-def process_webcam():
+    print("==============================")
+# ================= WEBCAM =================
+def process_webcam(exercise="pushup"):
     cap = cv2.VideoCapture(0)
-
-    if not cap.isOpened():
-        print("Error: Could not open webcam.")
-        return
-
     estimator = PoseEstimator()
-    temporal = TemporalEngine()
-    counter = RepCounter()
-    analyzer = FormAnalyzer()
-    session = SessionAnalyzer()  # Aggregate all reps
+
+    if exercise == "pushup":
+        temporal = TemporalEngine()
+        counter = RepCounter()
+        analyzer = FormAnalyzer()
+    else:
+        from src.squat_rep_counter import SquatRepCounter
+        from src.squat_temporal_engine import SquatTemporalEngine
+
+        temporal = SquatTemporalEngine()
+        counter = SquatRepCounter()
+        squat_analyzer = SquatAnalyzer()
 
     reps = 0
     last_feedback = []
-    
-    frame_count = 0
-    angle_samples = []  # DEBUG
 
-    print("Starting real-time webcam analysis. Press 'q' to quit.")
+    print(f"Starting webcam - {exercise}. Press 'q' to quit.")
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        frame_count += 1
+        stage = "N/A"
 
         results = estimator.process_frame(frame)
         landmarks = estimator.get_landmarks(results, frame.shape)
         angles = get_all_angles(landmarks)
 
-        if landmarks is not None:
-            elbow = get_elbow(landmarks, angles)
+        if landmarks:
+            if exercise == "pushup":
+                angle = get_elbow(landmarks, angles)
+            else:
+                angle = angles.get('left_knee') or angles.get('right_knee')
 
-            # TRACK MOTION
-            smooth_angle = temporal.smooth(elbow)
-            stage = temporal.detect_stage(smooth_angle)
-            
-            # DEBUG: Sample angles every 50 frames (more frequent)
-            if frame_count % 50 == 0 and smooth_angle:
-                angle_samples.append(smooth_angle)
-                # Show which arm is being tracked
-                left_elbow = angles.get('left_elbow')
-                right_elbow = angles.get('right_elbow')
-                print(f"[F{frame_count:3d}] Angle:{smooth_angle:6.1f}° (L:{left_elbow or 'N/A':>5} R:{right_elbow or 'N/A':>5}) | State:{counter.state}", flush=True)
+            smooth_angle = temporal.smooth(angle)
 
-            # ALWAYS COLLECT
-            analyzer.collect(landmarks, angles)
+            if smooth_angle is not None:
+                stage = temporal.detect_stage(smooth_angle)
 
-            # COUNT REPS (assume already in plank)
-            if counter.update(smooth_angle):
-                reps += 1
-                feedback = analyzer.evaluate()
-                
-                # Extract structured data for session analysis
-                from src.form_standards import assess_injury_risk, get_form_quality_score
-                
-                elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
-                hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
-                
-                analysis_angles = {
-                    'left_elbow': min(elbows) if elbows else None,
-                    'left_hip': min(hips) if hips else None,
-                }
-                
-                bottom_landmarks = None
-                if elbows:
-                    min_elbow_idx = elbows.index(min(elbows))
-                    bottom_landmarks = analyzer.rep_angles[min_elbow_idx]['landmarks']
-                
-                risk_assessment = assess_injury_risk(analysis_angles, bottom_landmarks)
-                score = get_form_quality_score(risk_assessment)
-                
-                rep_data = {
-                    'rep_num': reps,
-                    'score': score,
-                    'issues': risk_assessment.get('issues', []),
-                    'flags': risk_assessment.get('flags', []),
-                    'feedback': feedback
-                }
-                
-                session.add_rep(rep_data)
-                
-                # ─── BRIEF PER-REP FEEDBACK ────────────────────────
-                print(f"\n[REP {reps}] Score: {score}/100", flush=True)
-                positives = [f for f in risk_assessment['feedback'] if "[GOOD]" in f]
-                if positives:
-                    print(f"  ✓ {positives[0].replace('[GOOD] ', '')}", flush=True)
-                else:
-                    print(f"  ✓ Form acceptable", flush=True)
-                
-                if risk_assessment['issues']:
-                    for issue in risk_assessment['issues'][:2]:
-                        print(f"  ⚠ {issue.replace('_', ' ').title()}", flush=True)
-                
-                last_feedback = [f"Rep {reps}: {score}/100"]
+            # ===== PUSHUP =====
+            if exercise == "pushup":
+                analyzer.collect(landmarks, angles)
 
-                analyzer.reset()
+                if counter.update(smooth_angle):
+                    reps += 1
 
-            # DRAW
-            frame = estimator.draw_skeleton(frame, results)
+                    from src.form_standards import assess_injury_risk, get_form_quality_score
 
-            # UI
-            cv2.putText(frame, f"Reps: {reps}", (20,40),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+                    elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
+                    hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
 
-            cv2.putText(frame, f"Stage: {stage}", (20,80),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
+                    analysis_angles = {
+                        'left_elbow': min(elbows) if elbows else None,
+                        'left_hip': min(hips) if hips else None,
+                    }
 
-            if smooth_angle:
-                cv2.putText(frame, f"Elbow: {smooth_angle:.1f}°", (20,110),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
+                    risk = assess_injury_risk(analysis_angles, None)
+                    score = get_form_quality_score(risk)
 
-            y = 140
-            for msg in last_feedback:
-                cv2.putText(frame, msg, (20,y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,255,0), 2)
-                y += 30
+                    last_feedback = [f"Score: {score}/100"]
 
-        cv2.imshow('FormAI - Real-time Push-up Analysis', frame)
+                    positives = [f for f in risk['feedback'] if "[GOOD]" in f]
+                    if positives:
+                        last_feedback.append(positives[0].replace("[GOOD] ", ""))
+                    else:
+                        last_feedback.append("Form acceptable")
+
+                    for issue in risk['issues'][:2]:
+                        last_feedback.append(issue.replace("_", " ").title())
+
+                    analyzer.reset()
+
+            # ===== SQUAT =====
+            else:
+                if counter.update(smooth_angle, landmarks):
+                    reps += 1
+                    rep_angles = counter.get_last_rep()
+                    landmarks_seq = counter.get_last_landmarks()
+
+                    result = squat_analyzer.analyze(rep_angles, landmarks_seq)
+
+                    last_feedback = [f"Score: {result['score']}/100"]
+
+                    for fb in result["feedback"]:
+                        last_feedback.append(fb)
+
+                    for issue in result["issues"][:2]:
+                        last_feedback.append(issue.replace("_", " ").title())
+
+        # DRAW
+        frame = estimator.draw_skeleton(frame, results)
+
+        cv2.putText(frame, f"{exercise.upper()}", (20, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2)
+
+        cv2.putText(frame, f"Reps: {reps}", (20, 65),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+        cv2.putText(frame, f"Stage: {stage}", (20, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+        cv2.rectangle(frame, (10, 110), (450, 250), (0, 0, 0), -1)
+
+        y = 140
+        for msg in last_feedback[:3]:
+            color = (0, 255, 0) if ("Good" in msg or "Excellent" in msg or "Score" in msg) else (0, 0, 255)
+
+            cv2.putText(frame, msg, (20, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+            y += 30
+
+        cv2.imshow("FormAI Webcam", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # ─── FINALIZE IN-PROGRESS REP ────────────────────────
-    if counter.state == "DOWN" and len(counter.angles_in_rep) > 10:
-        if counter.update(None):  # Finalize video-end rep
-            reps += 1
-            analyzer.collect(None, None)  # Empty collect to mark completion
-            try:
-                feedback = analyzer.evaluate()
-                
-                from src.form_standards import assess_injury_risk, get_form_quality_score
-                
-                elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
-                hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
-                
-                analysis_angles = {
-                    'left_elbow': min(elbows) if elbows else None,
-                    'left_hip': min(hips) if hips else None,
-                }
-                
-                bottom_landmarks = None
-                if elbows:
-                    min_elbow_idx = elbows.index(min(elbows))
-                    bottom_landmarks = analyzer.rep_angles[min_elbow_idx]['landmarks']
-                
-                risk_assessment = assess_injury_risk(analysis_angles, bottom_landmarks)
-                score = get_form_quality_score(risk_assessment)
-                
-                rep_data = {
-                    'rep_num': reps,
-                    'score': score,
-                    'issues': risk_assessment.get('issues', []),
-                    'flags': risk_assessment.get('flags', []),
-                    'feedback': feedback
-                }
-                
-                session.add_rep(rep_data)
-                
-            except:
-                pass
-
     cap.release()
     cv2.destroyAllWindows()
-
-    # ═══════════════════════════════════════════════════════════
-    # GENERATE CONSOLIDATED SESSION REPORT
-    # ═══════════════════════════════════════════════════════════
-    session_report = session.analyze()
-    
-    print("\n")
-    for line in session_report['feedback']:
-        print(line, flush=True)
-    
-    print(f"\n{'='*60}")
-    print(f"Total reps: {reps}")
-    print(f"{'='*60}")
-    
-    # DEBUG: Show angle details
-    if angle_samples:
-        print(f"Angle range: {min(angle_samples):.1f}° - {max(angle_samples):.1f}°")
-        print(f"Avg angle: {sum(angle_samples)/len(angle_samples):.1f}°")
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        input_file = sys.argv[1]
-    else:
-        input_file = "input.mp4"
-    
-    # Always output to same file
-    output_file = "output.mp4"
-    
-    process_video(input_file, output_file)
