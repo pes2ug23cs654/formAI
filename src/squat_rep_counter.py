@@ -1,0 +1,94 @@
+"""
+Squat Rep Counter - Accurate Squat Detection
+Counts squat reps correctly while collecting form data for analysis
+"""
+
+class SquatRepCounter:
+    def __init__(self, debug=False):
+        self.state = "STANDING"  # STANDING, DESCENDING, BOTTOM, ASCENDING
+        self.reps = 0
+        self.debug = debug
+        self.frame_num = 0
+        self.angles_in_rep = []  # For form analysis
+        self.descent_frames = 0  # Frames spent descending
+        self.ascent_frames = 0   # Frames spent ascending
+        self.bottom_frames = 0   # Frames at bottom position
+
+    def update(self, knee_angle):
+        """Process frame or finalize on video end"""
+        # Handle video end
+        if knee_angle is None:
+            if self.state in ["DESCENDING", "BOTTOM"] and len(self.angles_in_rep) > 15:
+                self.reps += 1
+                if self.debug:
+                    print(f"[VIDEO END] Finalizing squat rep - total: {self.reps}", flush=True)
+                self.angles_in_rep = []
+                return True
+            return False
+
+        self.frame_num += 1
+        self.angles_in_rep.append(knee_angle)
+
+        # SQUAT STATE MACHINE
+        if self.state == "STANDING":
+            # Start descent when knees bend significantly (>160° to <140°)
+            if knee_angle < 140:
+                self.state = "DESCENDING"
+                self.descent_frames = 0
+                if self.debug and self.frame_num <= 100:
+                    print(f"[F{self.frame_num}] DESCENDING ({knee_angle:.0f}°)", flush=True)
+
+        elif self.state == "DESCENDING":
+            self.descent_frames += 1
+
+            # Reached bottom when knee angle stabilizes around 90-110°
+            if 85 <= knee_angle <= 115 and self.descent_frames >= 3:
+                self.state = "BOTTOM"
+                self.bottom_frames = 0
+                if self.debug and self.frame_num <= 500:
+                    print(f"[F{self.frame_num}] BOTTOM ({knee_angle:.0f}°) - descent took {self.descent_frames} frames", flush=True)
+
+            # If angle starts increasing before reaching bottom, might be false start
+            elif knee_angle > 140 and self.descent_frames < 5:
+                self.state = "STANDING"
+                if self.debug and self.frame_num <= 100:
+                    print(f"[F{self.frame_num}] False start - back to STANDING", flush=True)
+
+        elif self.state == "BOTTOM":
+            self.bottom_frames += 1
+
+            # Start ascent when angle increases significantly
+            if knee_angle > 120 and self.bottom_frames >= 2:
+                self.state = "ASCENDING"
+                self.ascent_frames = 0
+                if self.debug and self.frame_num <= 500:
+                    print(f"[F{self.frame_num}] ASCENDING ({knee_angle:.0f}°) - bottom held {self.bottom_frames} frames", flush=True)
+
+        elif self.state == "ASCENDING":
+            self.ascent_frames += 1
+
+            # Complete rep when back to standing position (>160°)
+            if knee_angle > 160 and self.ascent_frames >= 3:
+                self.state = "STANDING"
+                self.reps += 1
+                if self.debug and self.frame_num <= 500:
+                    print(f"[F{self.frame_num}] STANDING - SQUAT #{self.reps} (ascent: {self.ascent_frames} frames)", flush=True)
+                self.angles_in_rep = []
+                return True  # Signal rep completed
+
+            # If angle drops again, might be bouncing at bottom
+            elif knee_angle < 120 and self.ascent_frames < 5:
+                self.state = "BOTTOM"
+                self.bottom_frames = 0
+                if self.debug and self.frame_num <= 500:
+                    print(f"[F{self.frame_num}] Back to BOTTOM - possible bounce", flush=True)
+
+        return False
+
+    def get_rep_angles(self):
+        """Return angles collected during rep"""
+        return self.angles_in_rep
+
+    def reset(self):
+        """Reset for next rep"""
+        self.angles_in_rep = []

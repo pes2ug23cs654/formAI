@@ -11,13 +11,31 @@ LANDMARKS = {
 }
 
 
-# ── Angle calculation ─────────────────────────
+# ── Angle calculation (3D-aware) ─────────────────────────
 def calculate_angle(landmarks, a, b, c):
+    """
+    Calculate angle between three joints using 3D coordinates.
+    This eliminates camera-angle bias by working in true 3D space.
+    """
     try:
-        p1 = np.array([landmarks[a]['x'], landmarks[a]['y']])
-        p2 = np.array([landmarks[b]['x'], landmarks[b]['y']])
-        p3 = np.array([landmarks[c]['x'], landmarks[c]['y']])
-
+        # Try 3D calculation first (if z-coordinates available)
+        lm_a = landmarks[a]
+        lm_b = landmarks[b]
+        lm_c = landmarks[c]
+        
+        if 'z' in lm_a and 'z' in lm_b and 'z' in lm_c:
+            # 3D angle calculation (camera-angle independent)
+            # Scale z appropriately: z is [-1,1] normalized, x/y are pixels
+            # Multiply by 100 to give z relative weight vs pixel coordinates
+            p1 = np.array([lm_a['x'], lm_a['y'], lm_a['z'] * 100])
+            p2 = np.array([lm_b['x'], lm_b['y'], lm_b['z'] * 100])
+            p3 = np.array([lm_c['x'], lm_c['y'], lm_c['z'] * 100])
+        else:
+            # Fallback to 2D if z not available
+            p1 = np.array([lm_a['x'], lm_a['y']])
+            p2 = np.array([lm_b['x'], lm_b['y']])
+            p3 = np.array([lm_c['x'], lm_c['y']])
+        
         v1 = p1 - p2
         v2 = p3 - p2
 

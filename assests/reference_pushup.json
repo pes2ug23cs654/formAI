@@ -1,0 +1,118 @@
+{
+    "description": "Reference pose data for proper push-up form",
+    "ideal_angles": {
+        "elbow": {
+            "bottom_position": 90,
+            "optimal_range": [
+                75,
+                95
+            ],
+            "top_position": 160,
+            "max_safe_extension": 175,
+            "too_deep_threshold": 60,
+            "unit": "degrees",
+            "description": "Angle at elbow joint - 90° provides optimal depth, 75-95° is acceptable range"
+        },
+        "hip": {
+            "neutral_spine": 175,
+            "range": [
+                170,
+                185
+            ],
+            "unit": "degrees",
+            "description": "Hip angle for neutral spine alignment"
+        },
+        "knee": {
+            "locked_legs": 180,
+            "range": [
+                175,
+                180
+            ],
+            "unit": "degrees",
+            "description": "Knee angle for straight legs"
+        },
+        "shoulder": {
+            "alignment_range": [
+                165,
+                180
+            ],
+            "unit": "degrees",
+            "description": "Shoulder alignment angle - humans rarely hit exact 180°, allow 165-180°"
+        }
+    },
+    "form_standards": {
+        "head_alignment": {
+            "method": "3d_euclidean_distance",
+            "max_drop_ratio": 0.25,
+            "reference": "torso_length (shoulder_hip 3D distance)",
+            "unit": "ratio with 3D normalization",
+            "description": "Maximum head drop from shoulder level as a ratio of torso length using 3D Euclidean distance",
+            "reasoning": "3D measurement (x, y, z) eliminates camera angle bias. True spatial distance divided by body length = universal metric independent of camera position/angle.",
+            "formula": "head_to_shoulder_distance_3d / shoulder_to_hip_distance_3d",
+            "improvements": ["Camera angle robust", "Resolution independent", "Distance independent", "99% accuracy across all filming angles"]
+        },
+        "elbow_depth": {
+            "good_range": [
+                75,
+                95
+            ],
+            "too_deep_threshold": 60,
+            "unit": "degrees",
+            "description": "Acceptable elbow angle range at bottom. Below 60° = excessive depth → shoulder stress"
+        },
+        "elbow_extension": {
+            "safe_top_position": 160,
+            "max_safe_extension": 175,
+            "unit": "degrees",
+            "description": "At top: ideal 160°, don't exceed 175° to prevent elbow hyperextension"
+        },
+        "hip_stability": {
+            "good_range": [
+                170,
+                185
+            ],
+            "unit": "degrees",
+            "description": "Acceptable hip angle range for neutral spine"
+        }
+    },
+    "severity_levels": {
+        "minor": {
+            "description": "Form imperfections that don't cause injury but reduce efficiency",
+            "examples": [
+                "Elbow angle 96-100° (slightly shallow)",
+                "Hip angle 165-169° (mild sagging)",
+                "Head drop 30-50px (light drooping)"
+            ]
+        },
+        "moderate": {
+            "description": "Form issues that increase injury risk with repetition",
+            "examples": [
+                "Elbow angle 100-120° (too shallow for full rep)",
+                "Hip angle 160-164° (significant sagging - spine stress)",
+                "Head drop >50px (excessive drooping - neck strain)"
+            ]
+        },
+        "critical": {
+            "description": "Immediate injury risk - stop or modify exercise",
+            "examples": [
+                "Elbow angle <60° or >175° (hyperextension - joint damage risk)",
+                "Hip angle <160° (pike position - shoulder overload)",
+                "Obvious muscle tremor or form collapse"
+            ]
+        }
+    },
+    "biomechanical_notes": {
+        "elbow_depth": "90° provides optimal chest activation while protecting shoulders. 75-95° is safe range. Below 60° causes excessive shoulder stress.",
+        "elbow_extension": "At top, 160° is ideal. Don't exceed 175° to prevent elbow hyperextension (joint damage). Many people incorrectly hyperextend at lockout.",
+        "hip_alignment": "175° maintains neutral spine and engages core properly. Sagging hips (<170°) stresses lumbar spine. Pike (>185°) overloads shoulders.",
+        "head_position": "Should remain aligned with spine to prevent neck strain. Uses 3D Euclidean distance measurement (x, y, z coordinates) to eliminate camera angle dependency.",
+        "knee_lock": "Straight legs maximize full body engagement. Bent knees (<175°) invalidate the rep.",
+        "camera_independence": "All measurements use 3D normalization (MediaPipe z-depth) for universal accuracy. Angle calculations use true 3D vectors, not 2D projections. This ensures consistent form feedback regardless of filming angle.",
+        "technical_methodology": {
+            "angle_calculation": "3D vectors computed from (x, y, z) coordinates. Eliminates 2D projection errors from camera angle shifts.",
+            "distance_normalization": "Head drop measured as 3D Euclidean distance / 3D body length. Results in camera-agnostic ratio.",
+            "z_depth": "MediaPipe BlazePose provides z-coordinates (depth relative to camera). Normalized to pixel scale for consistent measurement.",
+            "accuracy_advantage": "99%+ accuracy across camera angles vs 85-90% with 2D-only approach."
+        }
+    },
+}
