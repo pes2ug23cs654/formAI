@@ -55,6 +55,7 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 MODE_LIBRARY = "Input folder"
 MODE_UPLOAD = "Upload file"
 MODE_LIVE = "Live webcam"
+MODE_UPLOAD_PRIMARY = "Upload file (Recommended)"
 FEEDBACK_TEXT_OCEAN_BLUE = (148, 105, 0)
 FEEDBACK_BG_WHITE = (255, 255, 255)
 FEEDBACK_BORDER_BLACK = (0, 0, 0)
@@ -188,7 +189,7 @@ def render_summary_metrics(exercise_key: str, summary: dict) -> None:
     m1.metric("Exercise", exercise_key or "-")
     m2.metric("Total Reps", total_reps)
     m3.metric("Valid Reps", valid_reps)
-    m4.metric("Avg Score", int(round(avg_score)))
+    m4.metric("Avg Score", f"{avg_score:.1f}/10")
 
     st.caption(f"Rep consistency: {consistency:.0f}%")
 
@@ -201,9 +202,9 @@ def render_executive_summary(exercise_key: str, summary: dict) -> None:
 
     if total_reps == 0:
         verdict = "No measurable reps detected yet"
-    elif avg_score >= 85 and consistency >= 85:
+    elif avg_score >= 8.5 and consistency >= 85:
         verdict = "Excellent form session"
-    elif avg_score >= 70 and consistency >= 70:
+    elif avg_score >= 7.0 and consistency >= 70:
         verdict = "Solid form with room to improve"
     else:
         verdict = "Needs focused technique work"
@@ -213,7 +214,7 @@ def render_executive_summary(exercise_key: str, summary: dict) -> None:
             '<div class="exec-card">'
             '<p class="exec-title">Executive Summary</p>'
             f'<p class="exec-line">{exercise_key} • {verdict}</p>'
-            f'<p class="exec-line">Reps: {total_reps} | Valid: {valid_reps} | Consistency: {consistency:.0f}% | Avg score: {int(round(avg_score))}</p>'
+            f'<p class="exec-line">Reps: {total_reps} | Valid: {valid_reps} | Consistency: {consistency:.0f}% | Avg score: {avg_score:.1f}/10</p>'
             '</div>'
         ),
         unsafe_allow_html=True,
@@ -308,7 +309,7 @@ def build_holistic_feedback(exercise_key: str, summary: dict) -> list[str]:
             tips.append("Good session overall; prioritize consistency on every rep.")
 
     avg_score = float(summary.get("avg_score", 0) or 0)
-    if avg_score >= 90 and total_reps > 0:
+    if avg_score >= 9.0 and total_reps > 0:
         tips.append("Strong form overall. Next step: maintain quality at a steady tempo.")
 
     if not tips:
@@ -338,6 +339,26 @@ def _clean_feedback_for_overlay(message: str | None, max_chars: int = 72) -> str
     if len(text) > max_chars:
         return text[: max_chars - 3].rstrip() + "..."
     return text
+
+
+def _bicep_angle_quality_score(completed_angles: list[float]) -> float:
+    """Compute a smooth 0-10 quality score from curl elbow trace for score variability."""
+    if not completed_angles:
+        return 0.0
+
+    rep_min = float(min(completed_angles))
+    rep_max = float(max(completed_angles))
+    rep_span = rep_max - rep_min
+
+    target_top = 50.0
+    target_bottom = 165.0
+    target_span = 85.0
+
+    top_term = max(0.0, 1.0 - abs(rep_min - target_top) / 35.0)
+    bottom_term = max(0.0, 1.0 - abs(rep_max - target_bottom) / 30.0)
+    span_term = max(0.0, min(1.0, rep_span / target_span))
+
+    return round(10.0 * (0.45 * top_term + 0.35 * bottom_term + 0.20 * span_term), 1)
 
 
 def _feedback_lines_for_overlay(feedback: list[str], max_lines: int = 2, max_chars: int = 66) -> list[str]:
@@ -464,35 +485,71 @@ def run_live_webcam_assessment(
                     _ = is_pushup_ready_for_count(angles, floor_clearance=floor_clearance)
 
                 if count_conf_ok and counter.update(smooth_angle):
+                    completed_angles = counter.get_last_completed_rep_angles() or []
+
+                    # Reject partial reps; for bicep curls, bottom must reach <= 90 degrees.
+                    if completed_angles:
+                        rep_min = float(min(completed_angles))
+                        rep_max = float(max(completed_angles))
+                        rep_span = rep_max - rep_min
+
+                        if profile.key == "squat":
+                            # User rule: squat bottom knee angle must be below 80 degrees.
+                            if not (rep_min < 80.0 and rep_max >= 160.0 and rep_span >= 28.0):
+                                analyzer.reset()
+                                continue
+
+                        if profile.key == "lunge":
+                            # User rule: lunge bottom knee angle must be below 135 and above 70 degrees.
+                            if not (70.0 < rep_min < 135.0 and rep_max >= 155.0 and rep_span >= 25.0):
+                                analyzer.reset()
+                                continue
+
+                        if profile.key == "bicep_curl":
+                            if not (rep_max >= 150.0 and rep_min <= 60.0 and rep_span >= 50.0):
+                                analyzer.reset()
+                                continue
+
                     if profile.key == "pushup" and reps == 0 and frame_count <= max(30, int(1.0 * fps)):
                         analyzer.reset()
                         continue
 
                     feedback = analyzer.evaluate()
                     rep_score = score_rep(feedback)
+
+                    if profile.key == "bicep_curl" and completed_angles:
+                        angle_score = _bicep_angle_quality_score(completed_angles)
+                        rep_score["score"] = round(0.55 * float(rep_score.get("score", 0)) + 0.45 * angle_score, 1)
+
                     should_count_rep, validation_reason = ExerciseRepValidator.validate_rep(
                         profile.key, rep_score, feedback
                     )
 
-                    reps += 1
                     if not should_count_rep:
                         rep_score["is_valid"] = False
                         invalid_reasons = set(rep_score.get("invalid_reasons", []))
                         invalid_reasons.add("rep_rejected")
                         rep_score["invalid_reasons"] = sorted(invalid_reasons)
+                        last_feedback = feedback[:2]
+                        last_rep_score = rep_score.get("score")
+                        last_rep_valid = False
+                        last_validation_reason = validation_reason
+                        analyzer.reset()
+                        continue
 
+                    reps += 1
                     rep_reports.append(
                         {
                             "rep_number": reps,
                             "feedback": feedback,
-                            "counted_valid": bool(should_count_rep),
+                            "counted_valid": True,
                             "validation_reason": validation_reason,
                             **rep_score,
                         }
                     )
                     last_feedback = feedback[:2]
                     last_rep_score = rep_score.get("score")
-                    last_rep_valid = bool(should_count_rep)
+                    last_rep_valid = True
                     last_validation_reason = validation_reason
                     analyzer.reset()
 
@@ -503,10 +560,10 @@ def run_live_webcam_assessment(
                 score_text = "Score: --"
                 score_color = (220, 220, 220)
                 if last_rep_score is not None:
-                    score_text = f"Score: {int(round(last_rep_score))}/100"
-                    if last_rep_score >= 80:
+                    score_text = f"Score: {last_rep_score:.1f}/10"
+                    if last_rep_score >= 8:
                         score_color = (0, 200, 0)
-                    elif last_rep_score >= 60:
+                    elif last_rep_score >= 6:
                         score_color = (0, 180, 255)
                     else:
                         score_color = (0, 0, 255)
@@ -536,7 +593,7 @@ def run_live_webcam_assessment(
                 f"**Elapsed:** {elapsed:.1f}s / {duration_seconds}s | "
                 f"**Detected reps:** {reps} | "
                 f"**Low-confidence frames:** {low_confidence_frames} | "
-                f"**Last rep score:** {('--' if last_rep_score is None else int(round(last_rep_score)))}"
+                f"**Last rep score:** {('--' if last_rep_score is None else f'{last_rep_score:.1f}/10')}"
             )
     finally:
         cap.release()
@@ -711,7 +768,7 @@ with st.sidebar:
 
 source_mode = st.radio(
     "How do you want to run analysis?",
-    options=[MODE_LIBRARY, MODE_UPLOAD, MODE_LIVE],
+    options=[MODE_UPLOAD_PRIMARY, MODE_LIBRARY, MODE_LIVE],
     horizontal=True,
 )
 uploaded_file = None
@@ -733,7 +790,7 @@ if source_mode == MODE_LIBRARY:
     else:
         st.warning("No videos found in input folder. Upload a video to continue.")
 
-if source_mode == MODE_UPLOAD:
+if source_mode == MODE_UPLOAD_PRIMARY:
     uploaded_file = st.file_uploader("Upload MP4/MOV video", type=["mp4", "mov", "mkv", "avi"])
 
 left, right = st.columns([1.0, 1.35])
@@ -750,7 +807,7 @@ with left:
             render_video(input_path, "Input preview")
         else:
             st.error("No input video selected. Upload a video instead.")
-    elif source_mode == MODE_UPLOAD:
+    elif source_mode == MODE_UPLOAD_PRIMARY:
         if uploaded_file is not None:
             UPLOAD_INPUT.write_bytes(uploaded_file.read())
             input_path = UPLOAD_INPUT
@@ -780,21 +837,26 @@ with left:
 with right:
     st.markdown('<div class="step-card"><h3>Step 2: Output</h3><p>Review metrics, top issues, and actionable feedback.</p></div>', unsafe_allow_html=True)
 
+    if source_mode == MODE_UPLOAD_PRIMARY:
+        st.caption("Primary mode selected for demo reliability: uploaded video analysis.")
+
     if run_clicked or demo_clicked:
         if source_mode == MODE_LIVE:
-            with st.spinner("Starting webcam assessment..."):
-                report = run_live_webcam_assessment(
-                    exercise=exercise,
-                    calibration_seconds=calibration_seconds,
-                    confidence_threshold=confidence_threshold,
-                    duration_seconds=live_duration_seconds,
-                    camera_index=int(camera_index),
-                )
+            try:
+                with st.spinner("Starting webcam assessment..."):
+                    report = run_live_webcam_assessment(
+                        exercise=exercise,
+                        calibration_seconds=calibration_seconds,
+                        confidence_threshold=confidence_threshold,
+                        duration_seconds=live_duration_seconds,
+                        camera_index=int(camera_index),
+                    )
+                st.success("Live assessment complete")
+                render_live_report(report)
+            except Exception as exc:
+                st.error(f"Live assessment failed: {exc}")
 
-            st.success("Live assessment complete")
-            render_live_report(report)
-
-        elif source_mode == MODE_UPLOAD and uploaded_file is None:
+        elif source_mode == MODE_UPLOAD_PRIMARY and uploaded_file is None:
             st.error("Please upload a video before running analysis.")
         elif demo_clicked and demo_input_path is None:
             st.error("No demo video found in input folder.")
@@ -802,26 +864,31 @@ with right:
             st.error("Selected input video does not exist.")
         else:
             processing_input = demo_input_path if demo_clicked and demo_input_path is not None else input_path
-            with st.spinner("Analyzing video... this may take a minute."):
-                report = process_video(
-                    video_path=str(processing_input),
-                    output_path=str(CANONICAL_OUTPUT),
-                    report_json_path=str(CANONICAL_REPORT),
-                    debug=False,
-                    calibration_seconds=calibration_seconds,
-                    confidence_threshold=confidence_threshold,
-                    exercise=exercise,
-                )
-
-            st.success("Demo quick run complete" if demo_clicked else "Analysis complete")
-            preview_path, preview_err = get_web_preview_video(CANONICAL_OUTPUT)
-            render_video_report(report, preview_path=preview_path, preview_err=preview_err)
+            try:
+                with st.spinner("Analyzing video... this may take a minute."):
+                    report = process_video(
+                        video_path=str(processing_input),
+                        output_path=str(CANONICAL_OUTPUT),
+                        report_json_path=str(CANONICAL_REPORT),
+                        debug=False,
+                        calibration_seconds=calibration_seconds,
+                        confidence_threshold=confidence_threshold,
+                        exercise=exercise,
+                    )
+                st.success("Demo quick run complete" if demo_clicked else "Analysis complete")
+                preview_path, preview_err = get_web_preview_video(CANONICAL_OUTPUT)
+                render_video_report(report, preview_path=preview_path, preview_err=preview_err)
+            except Exception as exc:
+                st.error(f"Video analysis failed: {exc}")
 
     elif CANONICAL_OUTPUT.exists() and CANONICAL_REPORT.exists():
         st.info("Showing latest saved output.")
         preview_path, preview_err = get_web_preview_video(CANONICAL_OUTPUT)
-        data = json.loads(CANONICAL_REPORT.read_text(encoding="utf-8"))
-        render_video_report(data, preview_path=preview_path, preview_err=preview_err)
+        try:
+            data = json.loads(CANONICAL_REPORT.read_text(encoding="utf-8"))
+            render_video_report(data, preview_path=preview_path, preview_err=preview_err)
+        except Exception as exc:
+            st.error(f"Could not read saved report: {exc}")
     else:
         st.info("Run analysis to see a professional session report here.")
 
