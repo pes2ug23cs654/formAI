@@ -27,7 +27,11 @@ from video_processor import (
     _compute_pushup_floor_clearance,
     is_pushup_ready_for_count,
 )
-import imageio_ffmpeg
+
+try:
+    import imageio_ffmpeg
+except ModuleNotFoundError:
+    imageio_ffmpeg = None
 
 
 INPUT_DIR = BASE_DIR / "input"
@@ -51,6 +55,65 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 st.set_page_config(page_title="FormAI Coach", page_icon="AI", layout="wide")
 st.title("FormAI Exercise Coach")
 st.caption("Upload a workout video, choose exercise type, and get analyzed output with coaching feedback.")
+
+
+ISSUE_TO_TIP = {
+    "shallow_depth": "Increase range of motion and hit deeper reps consistently.",
+    "short_range_of_motion": "Complete full contraction and full extension for each rep.",
+    "no_lockout": "Finish each rep fully at the top before starting the next one.",
+    "hip_sag": "Keep your core braced and maintain a more stable torso.",
+    "forward_lean": "Keep your torso more upright to reduce compensation.",
+    "inconsistent_depth": "Keep tempo steady and match depth across reps.",
+    "momentum_cheat": "Slow down slightly and avoid using momentum to move weight.",
+    "neck_strain": "Keep neck neutral and avoid pulling from the neck.",
+    "knee_valgus": "Track knees in line with toes to improve joint alignment.", 
+    "core_instability": "Brace your core before each rep and control transitions.",
+    "joint_stress": "Avoid forcing end range; use smooth, controlled depth.",
+}
+
+
+def build_holistic_feedback(exercise_key: str, summary: dict) -> list[str]:
+    """Create session-level actionable feedback from summary metrics."""
+    tips = []
+
+    for tip in summary.get("coaching_tips", []) or []:
+        if tip and tip not in tips:
+            tips.append(str(tip))
+
+    raw_issue_counts = summary.get("issue_counts", {}) or {}
+    issue_counts: dict[str, int] = {}
+    if isinstance(raw_issue_counts, dict):
+        for key, value in raw_issue_counts.items():
+            if isinstance(key, str):
+                try:
+                    issue_counts[key] = int(value)
+                except (TypeError, ValueError):
+                    continue
+
+    if issue_counts:
+        top_issue_keys = sorted(issue_counts.keys(), key=lambda k: issue_counts[k], reverse=True)[:3]
+        for key in top_issue_keys:
+            mapped_tip = ISSUE_TO_TIP.get(key)
+            if mapped_tip and mapped_tip not in tips:
+                tips.append(mapped_tip)
+
+    total_reps = int(summary.get("total_reps", 0) or 0)
+    valid_reps = int(summary.get("valid_reps", 0) or 0)
+    if total_reps > 0:
+        consistency = (valid_reps / total_reps) * 100.0
+        if consistency < 70:
+            tips.append("Focus on consistent setup each rep before increasing speed.")
+        elif consistency < 90:
+            tips.append("Good session overall; prioritize consistency on every rep.")
+
+    avg_score = float(summary.get("avg_score", 0) or 0)
+    if avg_score >= 90 and total_reps > 0:
+        tips.append("Strong form overall. Next step: maintain quality at a steady tempo.")
+
+    if not tips:
+        tips.append("No major issues detected. Keep this setup and range for future sets.")
+
+    return tips[:5]
 
 
 def run_live_webcam_assessment(
@@ -77,7 +140,6 @@ def run_live_webcam_assessment(
         raise ValueError("Could not open webcam. Check camera permission and index.")
 
     fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
-    max_frames = max(1, int(duration_seconds * fps))
 
     reps = 0
     rep_reports = []
@@ -94,14 +156,18 @@ def run_live_webcam_assessment(
     status_box.info("Live assessment running. Keep full body visible from side angle.")
 
     start_time = time.time()
+    elapsed = 0.0
     try:
-        while frame_count < max_frames:
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed >= float(duration_seconds):
+                break
+
             ret, frame = cap.read()
             if not ret:
                 continue
 
             frame_count += 1
-            elapsed = time.time() - start_time
 
             results = estimator.process_frame(frame)
             landmarks = estimator.get_landmarks(results, frame.shape)
@@ -275,6 +341,9 @@ def get_web_preview_video(source_path: Path) -> tuple[Path, str | None]:
     if not source_path.exists():
         return source_path, "Output video file not found"
 
+    if imageio_ffmpeg is None:
+        return source_path, "Preview transcoding unavailable: install imageio-ffmpeg for browser-optimized output"
+
     # Reuse converted file only when it is strictly newer than source.
     # This avoids stale preview reuse when both files share same-second mtime.
     if (
@@ -422,12 +491,9 @@ with right:
             with st.expander("Live Session Diagnostics", expanded=False):
                 st.write(live_info)
 
-            with st.expander("Per-Rep Details", expanded=False):
-                for rep in report.get("rep_reports", []):
-                    st.markdown(f"**Rep {rep.get('rep_number')}** | Score: {rep.get('score')} | Valid: {rep.get('is_valid')}")
-                    feedback = rep.get("feedback", [])
-                    for line in feedback:
-                        st.write(f"- {line}")
+            st.markdown("### Session Feedback")
+            for tip in build_holistic_feedback(report.get("exercise", ""), summary):
+                st.write(f"- {tip}")
 
         elif source_mode == "Upload new video" and uploaded_file is None:
             st.error("Please upload a video before running analysis.")
@@ -465,11 +531,9 @@ with right:
             else:
                 st.write("No major issues detected.")
 
-            coaching_tips = summary.get("coaching_tips", [])
-            if coaching_tips:
-                st.markdown("### Coaching Tips")
-                for tip in coaching_tips:
-                    st.write(f"- {tip}")
+            st.markdown("### Session Feedback")
+            for tip in build_holistic_feedback(report.get("exercise", ""), summary):
+                st.write(f"- {tip}")
 
             confidence = report.get("confidence", {})
             with st.expander("Readiness Diagnostics", expanded=False):
@@ -480,13 +544,7 @@ with right:
                     st.write("Posture hint counts:")
                     st.write(posture_counts)
 
-            with st.expander("Per-Rep Details", expanded=False):
-                for rep in report.get("rep_reports", []):
-                    st.markdown(f"**Rep {rep.get('rep_number')}** | Score: {rep.get('score')} | Valid: {rep.get('is_valid')}")
-                    feedback = rep.get("feedback", [])
-                    if feedback:
-                        for line in feedback:
-                            st.write(f"- {line}")
+            # Per-rep feedback intentionally hidden in demo UX; summary guidance is shown above.
 
     elif CANONICAL_OUTPUT.exists() and CANONICAL_REPORT.exists():
         st.info("Showing latest saved output.")
@@ -503,10 +561,9 @@ with right:
         m4.metric("Avg Score", summary.get("avg_score", 0))
 
         coaching_tips = summary.get("coaching_tips", [])
-        if coaching_tips:
-            st.markdown("### Coaching Tips")
-            for tip in coaching_tips:
-                st.write(f"- {tip}")
+        st.markdown("### Session Feedback")
+        for tip in build_holistic_feedback(data.get("exercise", ""), summary):
+            st.write(f"- {tip}")
     else:
         st.info("Run analysis to see results.")
 

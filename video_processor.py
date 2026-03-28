@@ -516,6 +516,26 @@ def process_video(
                     analyzer.reset()
                     continue
 
+            # For curls, reject half reps (short ROM) before scoring as full reps.
+            if profile.key == "bicep_curl" and completed_angles:
+                rep_min = min(completed_angles)
+                rep_max = max(completed_angles)
+                rep_span = rep_max - rep_min
+
+                has_bottom_extension = rep_max >= 145.0
+                has_top_contraction = rep_min <= 105.0
+                has_enough_rom = rep_span >= 45.0
+
+                if not (has_bottom_extension and has_top_contraction and has_enough_rom):
+                    if debug:
+                        print(
+                            "[REP SKIPPED] partial bicep curl "
+                            f"(min={rep_min:.1f}, max={rep_max:.1f}, span={rep_span:.1f})",
+                            flush=True,
+                        )
+                    analyzer.reset()
+                    continue
+
             last_feedback = analyzer.evaluate()
             rep_score = score_rep(last_feedback)
 
@@ -575,42 +595,66 @@ def process_video(
     # ─── FINALIZE IN-PROGRESS REP ────────────────────────
     if counter.state == "DOWN" and len(counter.angles_in_rep) > 10:
         if counter.update(None):  # Finalize video-end rep
-            analyzer.collect(None, None)  # Empty collect to mark completion
-            try:
-                feedback = analyzer.evaluate()
-                last_feedback = feedback[:3]  # Show last 3 lines
-                rep_score = score_rep(feedback)
+            completed_angles = counter.get_last_completed_rep_angles() or []
+
+            if profile.key == "bicep_curl" and completed_angles:
+                rep_min = min(completed_angles)
+                rep_max = max(completed_angles)
+                rep_span = rep_max - rep_min
+
+                has_bottom_extension = rep_max >= 145.0
+                has_top_contraction = rep_min <= 105.0
+                has_enough_rom = rep_span >= 45.0
+
+                if not (has_bottom_extension and has_top_contraction and has_enough_rom):
+                    if debug:
+                        print(
+                            "[REP SKIPPED] final partial bicep curl "
+                            f"(min={rep_min:.1f}, max={rep_max:.1f}, span={rep_span:.1f})",
+                            flush=True,
+                        )
+                    analyzer.reset()
+                    completed_angles = []
                 
-                # ─── EXERCISE-SPECIFIC REP VALIDATION ──────────────────────
-                should_count_rep, validation_reason = ExerciseRepValidator.validate_rep(
-                    profile.key, rep_score, feedback
-                )
+            if profile.key == "bicep_curl" and not completed_angles:
+                pass
+            else:
+                analyzer.collect(None, None)  # Empty collect to mark completion
+                try:
+                    feedback = analyzer.evaluate()
+                    last_feedback = feedback[:3]  # Show last 3 lines
+                    rep_score = score_rep(feedback)
+                    
+                    # ─── EXERCISE-SPECIFIC REP VALIDATION ──────────────────────
+                    should_count_rep, validation_reason = ExerciseRepValidator.validate_rep(
+                        profile.key, rep_score, feedback
+                    )
 
-                reps += 1
-                if not should_count_rep:
-                    rep_score["is_valid"] = False
-                    invalid_reasons = set(rep_score.get("invalid_reasons", []))
-                    invalid_reasons.add("rep_rejected")
-                    rep_score["invalid_reasons"] = sorted(invalid_reasons)
+                    reps += 1
+                    if not should_count_rep:
+                        rep_score["is_valid"] = False
+                        invalid_reasons = set(rep_score.get("invalid_reasons", []))
+                        invalid_reasons.add("rep_rejected")
+                        rep_score["invalid_reasons"] = sorted(invalid_reasons)
 
-                rep_reports.append({
-                    "rep_number": reps,
-                    "feedback": feedback,
-                    "counted_valid": bool(should_count_rep),
-                    "validation_reason": validation_reason,
-                    **rep_score,
-                })
+                    rep_reports.append({
+                        "rep_number": reps,
+                        "feedback": feedback,
+                        "counted_valid": bool(should_count_rep),
+                        "validation_reason": validation_reason,
+                        **rep_score,
+                    })
 
-                if debug:
-                    print(f"\n{'='*50}")
-                    print(f"Rep #{reps} (FINAL):")
-                    for msg in feedback:
-                        print(msg)
-                    print(f"Score: {rep_score['score']} | Valid: {rep_score['is_valid']}")
-                    print(f"Counted: {should_count_rep}")
-                    print(f"{'='*50}")
-            except Exception:
-                last_feedback = [f"Rep #{reps} - Analysis pending"]
+                    if debug:
+                        print(f"\n{'='*50}")
+                        print(f"Rep #{reps} (FINAL):")
+                        for msg in feedback:
+                            print(msg)
+                        print(f"Score: {rep_score['score']} | Valid: {rep_score['is_valid']}")
+                        print(f"Counted: {should_count_rep}")
+                        print(f"{'='*50}")
+                except Exception:
+                    last_feedback = [f"Rep #{reps} - Analysis pending"]
 
     cap.release()
     out.release()
