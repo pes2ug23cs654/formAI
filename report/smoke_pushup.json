@@ -1,6 +1,6 @@
 {
-  "input_video": "C:\\Users\\HP\\OneDrive\\Desktop\\tevin\\sem6\\hackathon\\praxis\\formAI\\input\\input2_pushup_30.mp4",
-  "output_video": "C:\\Users\\HP\\OneDrive\\Desktop\\tevin\\sem6\\hackathon\\praxis\\formAI\\output\\output.mp4",
+  "input_video": "input/uploaded.mp4",
+  "output_video": "output/smoke_pushup.mp4",
   "exercise": "pushup",
   "video": {
     "width": 1912,
@@ -32,18 +32,13 @@
   },
   "summary": {
     "total_reps": 39,
-    "avg_score": 85.3,
-    "valid_reps": 37,
-    "invalid_reps": 2,
+    "avg_score": 99.4,
+    "valid_reps": 39,
+    "invalid_reps": 0,
     "issue_counts": {
-      "bent_knees": 2,
-      "hip_sag": 2,
-      "inconsistent_depth": 39,
-      "shallow_depth": 1
+      "hip_sag": 2
     },
     "top_issues": [
-      "inconsistent_depth",
-      "bent_knees",
       "hip_sag"
     ],
     "coaching_tips": [
@@ -61,23 +56,17 @@
         "\u274c Knees bending - keep legs straight (170\u00b0+)",
         "\u26a0\ufe0f Inconsistent depth - maintain steady range"
       ],
-      "counted_valid": false,
-      "validation_reason": "Knees must be locked for valid rep",
-      "score": 41,
-      "is_valid": false,
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 88,
+      "is_valid": true,
       "issues": [
-        "bent_knees",
-        "hip_sag",
-        "inconsistent_depth"
+        "hip_sag"
       ],
       "warnings": [
-        "hip_sag",
-        "inconsistent_depth"
+        "hip_sag"
       ],
-      "invalid_reasons": [
-        "bent_knees",
-        "rep_rejected"
-      ]
+      "invalid_reasons": []
     },
     {
       "rep_number": 2,
@@ -88,26 +77,17 @@
         "\u274c Knees bending - keep legs straight (170\u00b0+)",
         "\u26a0\ufe0f Inconsistent depth - maintain steady range"
       ],
-      "counted_valid": false,
-      "validation_reason": "Knees must be locked for valid rep",
-      "score": 29,
-      "is_valid": false,
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 88,
+      "is_valid": true,
       "issues": [
-        "bent_knees",
-        "hip_sag",
-        "inconsistent_depth",
-        "shallow_depth"
+        "hip_sag"
       ],
       "warnings": [
-        "hip_sag",
-        "inconsistent_depth",
-        "shallow_depth"
+        "hip_sag"
       ],
-      "invalid_reasons": [
-        "bent_knees",
-        "form_breakdown",
-        "rep_rejected"
-      ]
+      "invalid_reasons": []
     },
     {
       "rep_number": 3,
@@ -121,14 +101,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -143,14 +119,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -165,14 +137,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -187,14 +155,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -209,14 +173,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -231,14 +191,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -253,14 +209,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -275,14 +227,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -297,14 +245,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -319,14 +263,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -340,14 +280,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -361,14 +297,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -382,14 +314,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -404,14 +332,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -426,14 +350,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -448,14 +368,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -470,14 +386,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -492,14 +404,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -514,14 +422,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -536,14 +440,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -558,14 +458,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -579,14 +475,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -600,14 +492,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -622,14 +510,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -644,14 +528,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -665,14 +545,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -687,14 +563,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -709,14 +581,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -731,14 +599,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -753,14 +617,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -775,14 +635,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -797,14 +653,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -819,14 +671,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -841,14 +689,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -863,14 +707,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -885,14 +725,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     },
     {
@@ -907,14 +743,10 @@
       ],
       "counted_valid": true,
       "validation_reason": "Rep counted - acceptable form",
-      "score": 88,
+      "score": 100,
       "is_valid": true,
-      "issues": [
-        "inconsistent_depth"
-      ],
-      "warnings": [
-        "inconsistent_depth"
-      ],
+      "issues": [],
+      "warnings": [],
       "invalid_reasons": []
     }
   ],

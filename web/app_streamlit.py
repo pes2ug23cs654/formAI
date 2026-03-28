@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import sys
 import subprocess
 import time
@@ -51,10 +52,15 @@ PICS_DIR = BASE_DIR / "pics"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
+MODE_LIBRARY = "Input folder"
+MODE_UPLOAD = "Upload file"
+MODE_LIVE = "Live webcam"
+FEEDBACK_TEXT_OCEAN_BLUE = (148, 105, 0)
+FEEDBACK_BG_WHITE = (255, 255, 255)
+FEEDBACK_BORDER_BLACK = (0, 0, 0)
+
 
 st.set_page_config(page_title="FormAI Coach", page_icon="AI", layout="wide")
-st.title("FormAI Exercise Coach")
-st.caption("Upload a workout video, choose exercise type, and get analyzed output with coaching feedback.")
 
 
 ISSUE_TO_TIP = {
@@ -70,6 +76,201 @@ ISSUE_TO_TIP = {
     "core_instability": "Brace your core before each rep and control transitions.",
     "joint_stress": "Avoid forcing end range; use smooth, controlled depth.",
 }
+
+
+def inject_ui_theme() -> None:
+    """Apply a clean, hackathon-grade visual style without adding UI clutter."""
+    st.markdown(
+        """
+        <style>
+        :root {
+            --primary: #0b3a53;
+            --accent: #17a2b8;
+            --surface: #f7fafc;
+            --text-muted: #52606d;
+            --ok: #0f8b3d;
+            --warn: #b76e00;
+            --bad: #b42318;
+        }
+        .main .block-container {
+            max-width: 1200px;
+            padding-top: 1.5rem;
+            padding-bottom: 2rem;
+        }
+        .hero {
+            background: linear-gradient(120deg, #f2f8fb, #ffffff);
+            border: 1px solid #dde7ee;
+            border-radius: 16px;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .hero h1 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.9rem;
+            letter-spacing: 0.2px;
+        }
+        .hero p {
+            margin: 0.35rem 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.97rem;
+        }
+        .step-card {
+            background: var(--surface);
+            border: 1px solid #e3edf3;
+            border-radius: 12px;
+            padding: 0.75rem 0.9rem;
+            margin-bottom: 0.7rem;
+        }
+        .step-card h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: var(--primary);
+        }
+        .step-card p {
+            margin: 0.2rem 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.92rem;
+        }
+        .result-chip {
+            display: inline-block;
+            padding: 0.22rem 0.5rem;
+            border: 1px solid #d7e3eb;
+            border-radius: 999px;
+            margin: 0.15rem 0.3rem 0 0;
+            background: #f8fcff;
+            color: #204055;
+            font-size: 0.83rem;
+        }
+        .exec-card {
+            background: linear-gradient(120deg, #f8fbfd, #ffffff);
+            border: 1px solid #dbe8f0;
+            border-radius: 14px;
+            padding: 0.8rem 0.95rem;
+            margin: 0.35rem 0 0.8rem 0;
+        }
+        .exec-title {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .exec-line {
+            margin: 0.25rem 0 0 0;
+            color: #24485f;
+            font-size: 0.93rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_hero() -> None:
+    st.markdown(
+        """
+        <div class="hero">
+          <h1>FormAI Exercise Coach</h1>
+          <p>Upload or stream your workout, get rep counts, quality scores, and coaching feedback in one clean flow.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_summary_metrics(exercise_key: str, summary: dict) -> None:
+    total_reps = int(summary.get("total_reps", 0) or 0)
+    valid_reps = int(summary.get("valid_reps", 0) or 0)
+    avg_score = float(summary.get("avg_score", 0) or 0)
+    consistency = (valid_reps / total_reps * 100.0) if total_reps else 0.0
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Exercise", exercise_key or "-")
+    m2.metric("Total Reps", total_reps)
+    m3.metric("Valid Reps", valid_reps)
+    m4.metric("Avg Score", int(round(avg_score)))
+
+    st.caption(f"Rep consistency: {consistency:.0f}%")
+
+
+def render_executive_summary(exercise_key: str, summary: dict) -> None:
+    total_reps = int(summary.get("total_reps", 0) or 0)
+    valid_reps = int(summary.get("valid_reps", 0) or 0)
+    avg_score = float(summary.get("avg_score", 0) or 0)
+    consistency = (valid_reps / total_reps * 100.0) if total_reps else 0.0
+
+    if total_reps == 0:
+        verdict = "No measurable reps detected yet"
+    elif avg_score >= 85 and consistency >= 85:
+        verdict = "Excellent form session"
+    elif avg_score >= 70 and consistency >= 70:
+        verdict = "Solid form with room to improve"
+    else:
+        verdict = "Needs focused technique work"
+
+    st.markdown(
+        (
+            '<div class="exec-card">'
+            '<p class="exec-title">Executive Summary</p>'
+            f'<p class="exec-line">{exercise_key} • {verdict}</p>'
+            f'<p class="exec-line">Reps: {total_reps} | Valid: {valid_reps} | Consistency: {consistency:.0f}% | Avg score: {int(round(avg_score))}</p>'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+
+
+def render_issue_chips(summary: dict) -> None:
+    top_issues = summary.get("top_issues", []) or []
+    st.markdown("### Top Issues")
+    if not top_issues:
+        st.write("No major issues detected.")
+        return
+
+    chips = "".join([f'<span class="result-chip">{issue}</span>' for issue in top_issues])
+    st.markdown(chips, unsafe_allow_html=True)
+
+
+def render_coaching_feedback(exercise_key: str, summary: dict) -> None:
+    st.markdown("### Coaching Feedback")
+    for tip in build_holistic_feedback(exercise_key, summary):
+        st.write(f"- {tip}")
+
+
+def render_video_report(report: dict, preview_path: Path | None = None, preview_err: str | None = None) -> None:
+    summary = report.get("summary", {}) or {}
+    exercise_key = report.get("exercise", "-")
+
+    render_executive_summary(exercise_key, summary)
+
+    if preview_path is not None:
+        if preview_err:
+            st.warning(preview_err)
+        render_video(preview_path, "Analyzed output")
+
+    render_summary_metrics(exercise_key, summary)
+    render_issue_chips(summary)
+    render_coaching_feedback(exercise_key, summary)
+
+    confidence = report.get("confidence", {}) or {}
+    with st.expander("Technical diagnostics", expanded=False):
+        st.write(f"Readiness rejected frames: {confidence.get('readiness_rejected_frames', 0)}")
+        st.write(f"Floor-clearance rejected frames: {confidence.get('floor_clearance_rejected_frames', 0)}")
+        posture_counts = confidence.get("posture_hint_counts", {})
+        if posture_counts:
+            st.write("Posture hint counts:")
+            st.write(posture_counts)
+
+
+def render_live_report(report: dict) -> None:
+    summary = report.get("summary", {}) or {}
+    exercise_key = report.get("exercise", "-")
+    render_executive_summary(exercise_key, summary)
+    render_summary_metrics(exercise_key, summary)
+    render_coaching_feedback(exercise_key, summary)
+
+    with st.expander("Live session diagnostics", expanded=False):
+        st.write(report.get("live", {}))
 
 
 def build_holistic_feedback(exercise_key: str, summary: dict) -> list[str]:
@@ -116,6 +317,66 @@ def build_holistic_feedback(exercise_key: str, summary: dict) -> list[str]:
     return tips[:5]
 
 
+inject_ui_theme()
+render_hero()
+
+
+def _clean_feedback_for_overlay(message: str | None, max_chars: int = 72) -> str:
+    """Normalize feedback text so webcam overlays stay readable."""
+    if message is None:
+        return ""
+
+    text = str(message).strip()
+    if not text:
+        return ""
+
+    # OpenCV Hershey fonts cannot render Unicode icons (✓ ⚠ ❌ 🚨), so keep ASCII only.
+    text = text.encode("ascii", "ignore").decode("ascii")
+
+    text = re.sub(r"^[^A-Za-z0-9]+", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > max_chars:
+        return text[: max_chars - 3].rstrip() + "..."
+    return text
+
+
+def _feedback_lines_for_overlay(feedback: list[str], max_lines: int = 2, max_chars: int = 66) -> list[str]:
+    lines: list[str] = []
+    seen: set[str] = set()
+    for message in feedback or []:
+        line = _clean_feedback_for_overlay(message, max_chars=max_chars)
+        if not line:
+            continue
+        key = line.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        lines.append(line)
+        if len(lines) >= max_lines:
+            break
+    return lines
+
+
+def _draw_feedback_badge(frame, text: str, x: int, y: int, font_scale: float = 0.54, thickness: int = 1) -> None:
+    """Draw compact feedback badge with ocean-blue text and subtle white background."""
+    if not text:
+        return
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    pad_x = 4
+    pad_y = 3
+
+    top_left = (x - pad_x, y - text_h - pad_y)
+    bottom_right = (x + text_w + pad_x, y + baseline + pad_y)
+
+    overlay = frame.copy()
+    cv2.rectangle(overlay, top_left, bottom_right, FEEDBACK_BG_WHITE, -1)
+    cv2.addWeighted(overlay, 0.78, frame, 0.22, 0, frame)
+    cv2.rectangle(frame, top_left, bottom_right, FEEDBACK_BORDER_BLACK, 1)
+    cv2.putText(frame, text, (x, y), font, font_scale, FEEDBACK_TEXT_OCEAN_BLUE, thickness)
+
+
 def run_live_webcam_assessment(
     exercise: str,
     calibration_seconds: int,
@@ -144,6 +405,9 @@ def run_live_webcam_assessment(
     reps = 0
     rep_reports = []
     last_feedback = []
+    last_rep_score = None
+    last_rep_valid = None
+    last_validation_reason = ""
     floor_y_estimate = None
     frame_count = 0
     low_confidence_frames = 0
@@ -227,13 +491,43 @@ def run_live_webcam_assessment(
                         }
                     )
                     last_feedback = feedback[:2]
+                    last_rep_score = rep_score.get("score")
+                    last_rep_valid = bool(should_count_rep)
+                    last_validation_reason = validation_reason
                     analyzer.reset()
 
                 frame = estimator.draw_skeleton(frame, results)
                 cv2.putText(frame, f"Reps: {reps}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 cv2.putText(frame, f"Stage: {stage}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-                if last_feedback:
-                    cv2.putText(frame, str(last_feedback[0])[:70], (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+                score_text = "Score: --"
+                score_color = (220, 220, 220)
+                if last_rep_score is not None:
+                    score_text = f"Score: {int(round(last_rep_score))}/100"
+                    if last_rep_score >= 80:
+                        score_color = (0, 200, 0)
+                    elif last_rep_score >= 60:
+                        score_color = (0, 180, 255)
+                    else:
+                        score_color = (0, 0, 255)
+                cv2.putText(frame, score_text, (20, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.72, score_color, 2)
+
+                if last_rep_valid is not None:
+                    validity_text = "Quality: Valid rep" if last_rep_valid else "Quality: Needs correction"
+                    validity_color = (0, 200, 0) if last_rep_valid else (0, 0, 255)
+                    cv2.putText(frame, validity_text, (20, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.62, validity_color, 2)
+
+                overlay_feedback = _feedback_lines_for_overlay(last_feedback, max_lines=2, max_chars=56)
+                if (not last_rep_valid) and last_validation_reason:
+                    reason_line = _clean_feedback_for_overlay(last_validation_reason, max_chars=56)
+                    if reason_line and reason_line.lower() not in {line.lower() for line in overlay_feedback}:
+                        overlay_feedback.insert(0, reason_line)
+                        overlay_feedback = overlay_feedback[:2]
+
+                if overlay_feedback:
+                    _draw_feedback_badge(frame, overlay_feedback[0], 20, 175, font_scale=0.54, thickness=1)
+                if len(overlay_feedback) > 1:
+                    _draw_feedback_badge(frame, overlay_feedback[1], 20, 201, font_scale=0.54, thickness=1)
 
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_box.image(rgb_frame, channels="RGB", use_container_width=True)
@@ -241,7 +535,8 @@ def run_live_webcam_assessment(
             stats_box.markdown(
                 f"**Elapsed:** {elapsed:.1f}s / {duration_seconds}s | "
                 f"**Detected reps:** {reps} | "
-                f"**Low-confidence frames:** {low_confidence_frames}"
+                f"**Low-confidence frames:** {low_confidence_frames} | "
+                f"**Last rep score:** {('--' if last_rep_score is None else int(round(last_rep_score)))}"
             )
     finally:
         cap.release()
@@ -290,6 +585,16 @@ def list_input_videos() -> list[Path]:
     """List videos available in input directory."""
     videos = [p for p in INPUT_DIR.iterdir() if p.is_file() and p.suffix.lower() in VIDEO_EXTENSIONS]
     return sorted(videos, key=lambda p: p.name.lower())
+
+
+def get_demo_input_video(available_videos: list[Path]) -> Path | None:
+    """Pick a best-effort demo video from input folder for one-click quick run."""
+    preferred_names = ["input.mp4", "uploaded.mp4"]
+    by_name = {p.name.lower(): p for p in available_videos}
+    for name in preferred_names:
+        if name in by_name:
+            return by_name[name]
+    return available_videos[0] if available_videos else None
 
 
 def _normalize_exercise_name(value: str) -> str:
@@ -378,47 +683,49 @@ def get_web_preview_video(source_path: Path) -> tuple[Path, str | None]:
         return source_path, f"Could not transcode for web preview: {exc}"
 
 with st.sidebar:
-    st.header("Run Settings")
+    st.header("Session Setup")
     exercise = st.selectbox("Exercise", options=list_exercise_keys(), index=list_exercise_keys().index("pushup"))
-    calibration_seconds = st.slider(
-        "Calibration seconds",
-        min_value=3,
-        max_value=15,
-        value=3,
-        help="How long FormAI watches your early movement to adapt thresholds. Longer = more stable, slower startup.",
-    )
-    confidence_threshold = st.slider(
-        "Confidence threshold",
-        min_value=0.30,
-        max_value=0.90,
-        value=0.50,
-        step=0.05,
-        help="How certain pose landmarks must be before counting/analyzing a frame. Higher = safer but can skip more frames.",
-    )
+    with st.expander("Advanced detection settings", expanded=False):
+        calibration_seconds = st.slider(
+            "Calibration seconds",
+            min_value=3,
+            max_value=15,
+            value=3,
+            help="How long FormAI watches your early movement to adapt thresholds. Longer = more stable, slower startup.",
+        )
+        confidence_threshold = st.slider(
+            "Confidence threshold",
+            min_value=0.30,
+            max_value=0.90,
+            value=0.50,
+            step=0.05,
+            help="How certain pose landmarks must be before counting/analyzing a frame. Higher = safer but can skip more frames.",
+        )
 
     guide_image_path = get_guide_image_for_exercise(exercise)
     if guide_image_path is not None:
-        st.markdown("### Exercise Guide")
+        st.markdown("### Guide")
         st.image(str(guide_image_path), caption=f"Reference: {guide_image_path.name}", use_container_width=True)
     else:
         st.info("No guide image found in pics folder for this exercise yet.")
 
 source_mode = st.radio(
-    "Input Source",
-    options=["Use video from input folder", "Upload new video", "Live webcam assessment"],
+    "How do you want to run analysis?",
+    options=[MODE_LIBRARY, MODE_UPLOAD, MODE_LIVE],
     horizontal=True,
 )
 uploaded_file = None
 available_videos = list_input_videos()
+demo_input_path = get_demo_input_video(available_videos)
 selected_input_name = None
 live_duration_seconds = 20
 camera_index = 0
 
-if source_mode == "Live webcam assessment":
+if source_mode == MODE_LIVE:
     live_duration_seconds = st.slider("Live session duration (seconds)", min_value=10, max_value=120, value=20, step=5)
     camera_index = st.number_input("Camera index", min_value=0, max_value=5, value=0, step=1)
 
-if source_mode == "Use video from input folder":
+if source_mode == MODE_LIBRARY:
     if available_videos:
         names = [p.name for p in available_videos]
         default_name = "input.mp4" if "input.mp4" in names else names[0]
@@ -426,27 +733,24 @@ if source_mode == "Use video from input folder":
     else:
         st.warning("No videos found in input folder. Upload a video to continue.")
 
-if source_mode == "Upload new video":
+if source_mode == MODE_UPLOAD:
     uploaded_file = st.file_uploader("Upload MP4/MOV video", type=["mp4", "mov", "mkv", "avi"])
 
-left, right = st.columns([1, 1])
+left, right = st.columns([1.0, 1.35])
 
 with left:
-    st.subheader("Input")
-    if guide_image_path is not None:
-        st.markdown("### Form Guide")
-        st.image(str(guide_image_path), use_container_width=True)
+    st.markdown('<div class="step-card"><h3>Step 1: Input</h3><p>Pick a source, verify preview, then run analysis.</p></div>', unsafe_allow_html=True)
 
     input_path = CANONICAL_INPUT
 
-    if source_mode == "Use video from input folder":
+    if source_mode == MODE_LIBRARY:
         if selected_input_name is not None:
             input_path = INPUT_DIR / selected_input_name
             st.success(f"Using {input_path.relative_to(BASE_DIR)}")
             render_video(input_path, "Input preview")
         else:
             st.error("No input video selected. Upload a video instead.")
-    elif source_mode == "Upload new video":
+    elif source_mode == MODE_UPLOAD:
         if uploaded_file is not None:
             UPLOAD_INPUT.write_bytes(uploaded_file.read())
             input_path = UPLOAD_INPUT
@@ -459,16 +763,25 @@ with left:
         st.caption("Tip: place camera side-on with full body visible for best push-up counting.")
 
     run_clicked = st.button(
-        "Start Live Assessment" if source_mode == "Live webcam assessment" else "Run Analysis",
+        "Start Live Assessment" if source_mode == MODE_LIVE else "Run Analysis",
         type="primary",
         use_container_width=True,
     )
 
-with right:
-    st.subheader("Output")
+    demo_clicked = False
+    if source_mode != MODE_LIVE:
+        demo_label = "Demo Day Quick Run"
+        if demo_input_path is not None:
+            st.caption(f"One-click demo uses: {demo_input_path.name}")
+            demo_clicked = st.button(demo_label, use_container_width=True)
+        else:
+            st.caption("Add a sample video in input/ to enable Demo Day Quick Run.")
 
-    if run_clicked:
-        if source_mode == "Live webcam assessment":
+with right:
+    st.markdown('<div class="step-card"><h3>Step 2: Output</h3><p>Review metrics, top issues, and actionable feedback.</p></div>', unsafe_allow_html=True)
+
+    if run_clicked or demo_clicked:
+        if source_mode == MODE_LIVE:
             with st.spinner("Starting webcam assessment..."):
                 report = run_live_webcam_assessment(
                     exercise=exercise,
@@ -479,30 +792,19 @@ with right:
                 )
 
             st.success("Live assessment complete")
+            render_live_report(report)
 
-            summary = report.get("summary", {})
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Exercise", report.get("exercise", "-"))
-            m2.metric("Total Reps", summary.get("total_reps", 0))
-            m3.metric("Valid Reps", summary.get("valid_reps", 0))
-            m4.metric("Avg Score", summary.get("avg_score", 0))
-
-            live_info = report.get("live", {})
-            with st.expander("Live Session Diagnostics", expanded=False):
-                st.write(live_info)
-
-            st.markdown("### Session Feedback")
-            for tip in build_holistic_feedback(report.get("exercise", ""), summary):
-                st.write(f"- {tip}")
-
-        elif source_mode == "Upload new video" and uploaded_file is None:
+        elif source_mode == MODE_UPLOAD and uploaded_file is None:
             st.error("Please upload a video before running analysis.")
-        elif source_mode == "Use video from input folder" and not input_path.exists():
+        elif demo_clicked and demo_input_path is None:
+            st.error("No demo video found in input folder.")
+        elif source_mode == MODE_LIBRARY and not input_path.exists():
             st.error("Selected input video does not exist.")
         else:
+            processing_input = demo_input_path if demo_clicked and demo_input_path is not None else input_path
             with st.spinner("Analyzing video... this may take a minute."):
                 report = process_video(
-                    video_path=str(input_path),
+                    video_path=str(processing_input),
                     output_path=str(CANONICAL_OUTPUT),
                     report_json_path=str(CANONICAL_REPORT),
                     debug=False,
@@ -511,61 +813,17 @@ with right:
                     exercise=exercise,
                 )
 
-            st.success("Analysis complete")
+            st.success("Demo quick run complete" if demo_clicked else "Analysis complete")
             preview_path, preview_err = get_web_preview_video(CANONICAL_OUTPUT)
-            if preview_err:
-                st.warning(preview_err)
-            render_video(preview_path, "Analyzed output")
-
-            summary = report.get("summary", {})
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Exercise", report.get("exercise", "-"))
-            m2.metric("Total Reps", summary.get("total_reps", 0))
-            m3.metric("Valid Reps", summary.get("valid_reps", 0))
-            m4.metric("Avg Score", summary.get("avg_score", 0))
-
-            st.markdown("### Top Issues")
-            top_issues = summary.get("top_issues", [])
-            if top_issues:
-                st.write(", ".join(top_issues))
-            else:
-                st.write("No major issues detected.")
-
-            st.markdown("### Session Feedback")
-            for tip in build_holistic_feedback(report.get("exercise", ""), summary):
-                st.write(f"- {tip}")
-
-            confidence = report.get("confidence", {})
-            with st.expander("Readiness Diagnostics", expanded=False):
-                st.write(f"Readiness rejected frames: {confidence.get('readiness_rejected_frames', 0)}")
-                st.write(f"Floor-clearance rejected frames: {confidence.get('floor_clearance_rejected_frames', 0)}")
-                posture_counts = confidence.get("posture_hint_counts", {})
-                if posture_counts:
-                    st.write("Posture hint counts:")
-                    st.write(posture_counts)
-
-            # Per-rep feedback intentionally hidden in demo UX; summary guidance is shown above.
+            render_video_report(report, preview_path=preview_path, preview_err=preview_err)
 
     elif CANONICAL_OUTPUT.exists() and CANONICAL_REPORT.exists():
         st.info("Showing latest saved output.")
         preview_path, preview_err = get_web_preview_video(CANONICAL_OUTPUT)
-        if preview_err:
-            st.warning(preview_err)
-        render_video(preview_path, "Latest output")
         data = json.loads(CANONICAL_REPORT.read_text(encoding="utf-8"))
-        summary = data.get("summary", {})
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Exercise", data.get("exercise", "-"))
-        m2.metric("Total Reps", summary.get("total_reps", 0))
-        m3.metric("Valid Reps", summary.get("valid_reps", 0))
-        m4.metric("Avg Score", summary.get("avg_score", 0))
-
-        coaching_tips = summary.get("coaching_tips", [])
-        st.markdown("### Session Feedback")
-        for tip in build_holistic_feedback(data.get("exercise", ""), summary):
-            st.write(f"- {tip}")
+        render_video_report(data, preview_path=preview_path, preview_err=preview_err)
     else:
-        st.info("Run analysis to see results.")
+        st.info("Run analysis to see a professional session report here.")
 
 st.markdown("---")
 st.caption("Outputs are saved to output/output.mp4 and report/report.json")

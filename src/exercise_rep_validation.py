@@ -10,20 +10,31 @@ class ExerciseRepValidator:
     @staticmethod
     def should_count_pushup(rep_score, feedback):
         """Push-up rep validation - strict due to common false positives"""
-        issues = set(rep_score.get("invalid_reasons", []))
+        issues = set(rep_score.get("issues", []))
+        invalid_reasons = set(rep_score.get("invalid_reasons", []))
         warnings = set(rep_score.get("warnings", []))
+        score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
         # Bent knees = not a real pushup
-        if "bent_knees" in issues:
+        if "bent_knees" in issues or "bent_knees" in invalid_reasons:
             return False, "Knees must be locked for valid rep"
+
+        # Strict straight-back requirement for pushups.
+        if "hip_sag" in issues or "hip_sag" in warnings:
+            return False, "Posture invalid: keep back straight (hips sagging)"
+
+        # Pike also indicates non-neutral body line.
+        if "pike_position" in issues or "pike_position" in warnings:
+            return False, "Posture invalid: keep body in a straight plank"
         
         # Sagging hips + poor score = form breakdown
-        if "sagging_hips" in issues and rep_score.get("score", 100) < 70:
+        if "sagging_hips" in issues and score < 70:
             return False, "Hips sagging too much - maintain straight body"
         
         # No body alignment = not a pushup
-        if "no_body_alignment_data" in issues:
+        if issues.intersection(no_data_keys) or invalid_reasons.intersection(no_data_keys):
             return False, "Cannot verify body alignment"
         
         # Hyperextension = injury risk
@@ -31,11 +42,11 @@ class ExerciseRepValidator:
             return False, "Elbows hyperextending - adjust depth"
         
         # Too many major issues
-        if len(issues) >= 3 or rep_score.get("score", 100) < 50:
+        if len(issues) >= 3 or score < 50:
             return False, "Form breakdown - too many issues"
         
         # ACCEPT CONDITIONS
-        if rep_score.get("score", 0) >= 60:  # Lenient threshold
+        if score >= 60:  # Lenient threshold
             return True, "Rep counted - acceptable form"
         
         return rep_score.get("is_valid", True), "Form analysis"
@@ -46,10 +57,11 @@ class ExerciseRepValidator:
         issues = set(rep_score.get("invalid_reasons", []))
         warnings = set(rep_score.get("warnings", []))
         score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
         # No depth data = can't verify
-        if "no_valid_data" in issues or score < 40:
+        if issues.intersection(no_data_keys) or score < 40:
             return False, "Cannot verify depth"
         
         # Extremely shallow
@@ -72,9 +84,10 @@ class ExerciseRepValidator:
         """Lunge rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
         score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if "no_valid_data" in issues or score < 40:
+        if issues.intersection(no_data_keys) or score < 40:
             return False, "Cannot verify form"
         
         # Unstable lunge
@@ -95,9 +108,10 @@ class ExerciseRepValidator:
         """Bicep curl rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
         score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if "no_valid_data" in issues or score < 40:
+        if issues.intersection(no_data_keys) or score < 40:
             return False, "Cannot verify form"
         
         # No full extension AT LEAST
@@ -122,9 +136,10 @@ class ExerciseRepValidator:
         """Shoulder press rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
         score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if "no_valid_data" in issues or score < 40:
+        if issues.intersection(no_data_keys) or score < 40:
             return False, "Cannot verify form"
         
         # No lockout = not a valid press
@@ -149,9 +164,10 @@ class ExerciseRepValidator:
         """Sit-up rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
         score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if "no_valid_data" in issues or score < 40:
+        if issues.intersection(no_data_keys) or score < 40:
             return False, "Cannot verify form"
         
         # Incomplete range = not full rep
@@ -176,9 +192,10 @@ class ExerciseRepValidator:
         """Mountain climber rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
         score = rep_score.get("score", 100)
+        no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if "no_valid_data" in issues or score < 40:
+        if issues.intersection(no_data_keys) or score < 40:
             return False, "Cannot verify form"
         
         # Sagging hips = not in plank

@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import json
 import sys
+import re
 
 from src.pose_estimator import PoseEstimator
 from src.angle_engine import get_all_angles, get_visibility, LANDMARKS
@@ -20,6 +21,71 @@ POSE_LEFT_HEEL = 29
 POSE_RIGHT_HEEL = 30
 POSE_LEFT_FOOT_INDEX = 31
 POSE_RIGHT_FOOT_INDEX = 32
+FEEDBACK_TEXT_OCEAN_BLUE = (148, 105, 0)
+FEEDBACK_BG_WHITE = (255, 255, 255)
+FEEDBACK_BORDER_BLACK = (0, 0, 0)
+
+
+def _clean_feedback_for_overlay(message, max_chars=72):
+    """Normalize feedback text so OpenCV overlays are readable and concise."""
+    if message is None:
+        return ""
+
+    text = str(message).strip()
+    if not text:
+        return ""
+
+    # OpenCV Hershey fonts cannot render Unicode icons (✓ ⚠ ❌ 🚨), so keep ASCII only.
+    text = text.encode("ascii", "ignore").decode("ascii")
+
+    # Remove common leading status glyphs that render poorly in OpenCV text.
+    text = re.sub(r"^[^A-Za-z0-9]+", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    if len(text) > max_chars:
+        return text[: max_chars - 3].rstrip() + "..."
+    return text
+
+
+def _feedback_lines_for_overlay(feedback, max_lines=3, max_chars=72):
+    """Create deduplicated, display-safe feedback lines for frame overlays."""
+    lines = []
+    seen = set()
+
+    for message in feedback or []:
+        line = _clean_feedback_for_overlay(message, max_chars=max_chars)
+        if not line:
+            continue
+        key = line.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        lines.append(line)
+        if len(lines) >= max_lines:
+            break
+
+    return lines
+
+
+def _draw_feedback_badge(frame, text, x, y, font_scale=0.54, thickness=1):
+    """Draw compact feedback badge with ocean-blue text and subtle white background."""
+    if not text:
+        return
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
+    pad_x = 4
+    pad_y = 3
+
+    top_left = (x - pad_x, y - text_h - pad_y)
+    bottom_right = (x + text_w + pad_x, y + baseline + pad_y)
+
+    # Semi-transparent white fill so the video remains visible under badges.
+    overlay = frame.copy()
+    cv2.rectangle(overlay, top_left, bottom_right, FEEDBACK_BG_WHITE, -1)
+    cv2.addWeighted(overlay, 0.78, frame, 0.22, 0, frame)
+    cv2.rectangle(frame, top_left, bottom_right, FEEDBACK_BORDER_BLACK, 1)
+    cv2.putText(frame, text, (x, y), font, font_scale, FEEDBACK_TEXT_OCEAN_BLUE, thickness)
 
 
 def _mean_visibility(landmarks, indices):
@@ -305,6 +371,39 @@ def _calibrate_thresholds(calibration_angles, profile):
     }
 
 
+def _passes_full_rep_gate(exercise_key, completed_angles):
+    """Reject partial reps by requiring exercise-specific ROM/endpoint coverage."""
+    if not completed_angles:
+        return False, "missing_motion_trace"
+
+    rep_min = float(min(completed_angles))
+    rep_max = float(max(completed_angles))
+    rep_span = rep_max - rep_min
+
+    thresholds = {
+        "pushup": {"min_max": 145.0, "max_min": 115.0, "span_min": 35.0},
+        "squat": {"min_max": 160.0, "max_min": 135.0, "span_min": 28.0},
+        "lunge": {"min_max": 155.0, "max_min": 130.0, "span_min": 25.0},
+        "bicep_curl": {"min_max": 150.0, "max_min": 100.0, "span_min": 50.0},
+        "shoulder_press": {"min_max": 150.0, "max_min": 130.0, "span_min": 22.0},
+        "situp": {"min_max": 135.0, "max_min": 115.0, "span_min": 18.0},
+        "mountain_climber": {"min_max": 150.0, "max_min": 120.0, "span_min": 25.0},
+    }
+
+    rule = thresholds.get(exercise_key)
+    if not rule:
+        return True, "no_gate"
+
+    has_top = rep_max >= rule["min_max"]
+    has_bottom = rep_min <= rule["max_min"]
+    has_span = rep_span >= rule["span_min"]
+
+    if has_top and has_bottom and has_span:
+        return True, "full_rep"
+
+    return False, f"partial_rep(min={rep_min:.1f},max={rep_max:.1f},span={rep_span:.1f})"
+
+
 def process_video(
     video_path,
     output_path,
@@ -345,6 +444,9 @@ def process_video(
 
     reps = 0
     last_feedback = []
+    last_rep_score = None
+    last_rep_valid = None
+    last_validation_reason = ""
     rep_reports = []
     
     frame_count = 0
@@ -498,6 +600,10 @@ def process_video(
             count_ready = True
             if current_posture_hints:
                 last_feedback = current_posture_hints[:2]
+                if reps == 0:
+                    last_rep_score = None
+                    last_rep_valid = None
+                    last_validation_reason = ""
 
         # COUNT REPS only on reliable frames
         if confidence_ok and count_ready and counter.update(smooth_angle):
@@ -516,25 +622,12 @@ def process_video(
                     analyzer.reset()
                     continue
 
-            # For curls, reject half reps (short ROM) before scoring as full reps.
-            if profile.key == "bicep_curl" and completed_angles:
-                rep_min = min(completed_angles)
-                rep_max = max(completed_angles)
-                rep_span = rep_max - rep_min
-
-                has_bottom_extension = rep_max >= 145.0
-                has_top_contraction = rep_min <= 105.0
-                has_enough_rom = rep_span >= 45.0
-
-                if not (has_bottom_extension and has_top_contraction and has_enough_rom):
-                    if debug:
-                        print(
-                            "[REP SKIPPED] partial bicep curl "
-                            f"(min={rep_min:.1f}, max={rep_max:.1f}, span={rep_span:.1f})",
-                            flush=True,
-                        )
-                    analyzer.reset()
-                    continue
+            is_full_rep, full_rep_reason = _passes_full_rep_gate(profile.key, completed_angles)
+            if not is_full_rep:
+                if debug:
+                    print(f"[REP SKIPPED] {profile.key} {full_rep_reason}", flush=True)
+                analyzer.reset()
+                continue
 
             last_feedback = analyzer.evaluate()
             rep_score = score_rep(last_feedback)
@@ -559,6 +652,9 @@ def process_video(
                 "validation_reason": validation_reason,
                 **rep_score,
             })
+            last_rep_score = rep_score.get("score")
+            last_rep_valid = bool(should_count_rep)
+            last_validation_reason = validation_reason
 
             if (not should_count_rep) and debug:
                 print(f"[REP FLAGGED INVALID] {profile.key}: {validation_reason}", flush=True)
@@ -584,11 +680,36 @@ def process_video(
         cv2.putText(frame, f"Stage: {stage}", (20,80),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
 
-        y = 120
-        for msg in last_feedback:
-            cv2.putText(frame, msg, (20,y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,255), 2)
-            y += 30
+        score_text = "Score: --"
+        score_color = (220, 220, 220)
+        if last_rep_score is not None:
+            score_text = f"Score: {int(round(last_rep_score))}/100"
+            if last_rep_score >= 80:
+                score_color = (0, 200, 0)
+            elif last_rep_score >= 60:
+                score_color = (0, 180, 255)
+            else:
+                score_color = (0, 0, 255)
+        cv2.putText(frame, score_text, (20, 115),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, score_color, 2)
+
+        if last_rep_valid is not None:
+            validity_text = "Quality: Valid rep" if last_rep_valid else "Quality: Needs correction"
+            validity_color = (0, 200, 0) if last_rep_valid else (0, 0, 255)
+            cv2.putText(frame, validity_text, (20, 145),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.65, validity_color, 2)
+
+        overlay_feedback = _feedback_lines_for_overlay(last_feedback, max_lines=2, max_chars=56)
+        if (not last_rep_valid) and last_validation_reason:
+            reason_line = _clean_feedback_for_overlay(last_validation_reason, max_chars=56)
+            if reason_line and reason_line.lower() not in {line.lower() for line in overlay_feedback}:
+                overlay_feedback.insert(0, reason_line)
+                overlay_feedback = overlay_feedback[:2]
+
+        y = 180
+        for msg in overlay_feedback:
+            _draw_feedback_badge(frame, msg, 20, y, font_scale=0.54, thickness=1)
+            y += 26
 
         out.write(frame)
 
@@ -597,27 +718,11 @@ def process_video(
         if counter.update(None):  # Finalize video-end rep
             completed_angles = counter.get_last_completed_rep_angles() or []
 
-            if profile.key == "bicep_curl" and completed_angles:
-                rep_min = min(completed_angles)
-                rep_max = max(completed_angles)
-                rep_span = rep_max - rep_min
-
-                has_bottom_extension = rep_max >= 145.0
-                has_top_contraction = rep_min <= 105.0
-                has_enough_rom = rep_span >= 45.0
-
-                if not (has_bottom_extension and has_top_contraction and has_enough_rom):
-                    if debug:
-                        print(
-                            "[REP SKIPPED] final partial bicep curl "
-                            f"(min={rep_min:.1f}, max={rep_max:.1f}, span={rep_span:.1f})",
-                            flush=True,
-                        )
-                    analyzer.reset()
-                    completed_angles = []
-                
-            if profile.key == "bicep_curl" and not completed_angles:
-                pass
+            is_full_rep, full_rep_reason = _passes_full_rep_gate(profile.key, completed_angles)
+            if not is_full_rep:
+                if debug:
+                    print(f"[REP SKIPPED] final {profile.key} {full_rep_reason}", flush=True)
+                analyzer.reset()
             else:
                 analyzer.collect(None, None)  # Empty collect to mark completion
                 try:
@@ -644,6 +749,9 @@ def process_video(
                         "validation_reason": validation_reason,
                         **rep_score,
                     })
+                    last_rep_score = rep_score.get("score")
+                    last_rep_valid = bool(should_count_rep)
+                    last_validation_reason = validation_reason
 
                     if debug:
                         print(f"\n{'='*50}")
@@ -695,7 +803,7 @@ def process_video(
             avg_score = session_summary.get("avg_score", 0)
             if avg_score < 70:
                 session_coaching_tips.append("Work on squat depth - aim for at least parallel (hips level with knees).")
-        if readiness_rejected_frames > 0 * 0.3:
+        if frame_count > 0 and (readiness_rejected_frames / frame_count) > 0.3:
             session_coaching_tips.append("Ensure you're starting from a standing position between reps.")
     
     elif profile.key == "lunge":

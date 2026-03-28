@@ -1,0 +1,714 @@
+{
+  "input_video": "input/uploaded.mp4",
+  "output_video": "output/output_bicep_filter_smoke.mp4",
+  "exercise": "bicep_curl",
+  "video": {
+    "width": 1912,
+    "height": 938,
+    "fps": 30,
+    "total_frames": 1164,
+    "estimated_total_frames": 1164
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 90,
+    "descent_trigger": 125.0,
+    "ascent_threshold": 156.9,
+    "angle_min": 92.6,
+    "angle_max": 168.2
+  },
+  "confidence": {
+    "threshold": 0.5,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 1164,
+    "readiness_rejected_frames": 0,
+    "floor_clearance_rejected_frames": 0,
+    "posture_hint_counts": {
+      "knees_too_low": 0,
+      "chest_too_low": 0,
+      "missing_floor_reference": 0
+    }
+  },
+  "summary": {
+    "total_reps": 39,
+    "avg_score": 100.0,
+    "valid_reps": 39,
+    "invalid_reps": 0,
+    "issue_counts": {},
+    "top_issues": [],
+    "coaching_tips": [
+      "Fully extend and contract arms for complete range of motion."
+    ]
+  },
+  "rep_reports": [
+    {
+      "rep_number": 1,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 2,
+      "feedback": [
+        "\u26a0\ufe0f Slight elbow bend at bottom - straighten fully",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 3,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 4,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 5,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 6,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 7,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 8,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 9,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 10,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 11,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 12,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 13,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 14,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 15,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 16,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 17,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 18,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 19,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 20,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 21,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 22,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 23,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 24,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 25,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 26,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 27,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 28,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 29,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 30,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 31,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 32,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 33,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 34,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 35,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 36,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 37,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 38,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 39,
+      "feedback": [
+        "\u2713 Full arm extension at bottom",
+        "\u26a0\ufe0f Past peak contraction - squeeze at top",
+        "\u26a0\ufe0f Limited range of motion - full range important",
+        "\u26a0\ufe0f Using momentum (jerky motion) - control the weight",
+        "\u26a0\ufe0f Inconsistent reps - maintain steady form"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    }
+  ],
+  "angle_stats": {
+    "sampled_count": 0,
+    "sampled_min": null,
+    "sampled_max": null,
+    "sampled_avg": null
+  }
+}
