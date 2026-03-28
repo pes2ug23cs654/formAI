@@ -1,0 +1,41 @@
+{
+  "input_video": "input\\input.mp4",
+  "output_video": "output\\output_squat7.mp4",
+  "exercise": "squat",
+  "video": {
+    "width": 1920,
+    "height": 854,
+    "fps": 30,
+    "total_frames": 389,
+    "estimated_total_frames": 389
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 194,
+    "descent_trigger": 145.0,
+    "ascent_threshold": 175.0,
+    "angle_min": 170.9,
+    "angle_max": 176.6
+  },
+  "confidence": {
+    "threshold": 0.55,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 389
+  },
+  "summary": {
+    "total_reps": 0,
+    "avg_score": 0,
+    "valid_reps": 0,
+    "invalid_reps": 0,
+    "issue_counts": {},
+    "top_issues": []
+  },
+  "rep_reports": [],
+  "angle_stats": {
+    "sampled_count": 0,
+    "sampled_min": null,
+    "sampled_max": null,
+    "sampled_avg": null
+  }
+}

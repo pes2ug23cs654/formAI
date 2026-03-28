@@ -1,0 +1,108 @@
+{
+  "input_video": "input.mp4",
+  "output_video": "output_calib.mp4",
+  "video": {
+    "width": 1920,
+    "height": 854,
+    "fps": 30,
+    "total_frames": 389,
+    "estimated_total_frames": 389
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 194,
+    "descent_trigger": 121.9,
+    "ascent_threshold": 162.6,
+    "angle_min": 76.1,
+    "angle_max": 177.9
+  },
+  "confidence": {
+    "threshold": 0.55,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 389
+  },
+  "summary": {
+    "total_reps": 4,
+    "avg_score": 95.5,
+    "valid_reps": 4,
+    "invalid_reps": 0,
+    "issue_counts": {
+      "head_drop": 2,
+      "no_lockout": 1
+    },
+    "top_issues": [
+      "head_drop",
+      "no_lockout"
+    ]
+  },
+  "rep_reports": [
+    {
+      "rep_number": 1,
+      "feedback": [
+        "Good depth",
+        "Did not fully extend arms",
+        "Good body alignment",
+        "Head dropping"
+      ],
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "head_drop",
+        "no_lockout"
+      ],
+      "warnings": [
+        "head_drop",
+        "no_lockout"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 2,
+      "feedback": [
+        "Good depth",
+        "Good body alignment"
+      ],
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 3,
+      "feedback": [
+        "Good depth",
+        "Good body alignment",
+        "Head dropping"
+      ],
+      "score": 94,
+      "is_valid": true,
+      "issues": [
+        "head_drop"
+      ],
+      "warnings": [
+        "head_drop"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 4,
+      "feedback": [
+        "Good depth",
+        "Good body alignment"
+      ],
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    }
+  ],
+  "angle_stats": {
+    "sampled_count": 7,
+    "sampled_min": 82.1,
+    "sampled_max": 154.7,
+    "sampled_avg": 108.7
+  }
+}

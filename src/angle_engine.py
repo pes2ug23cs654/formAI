@@ -57,6 +57,15 @@ def get_all_angles(landmarks):
         landmarks, L['right_shoulder'], L['right_hip'], L['right_knee']
     )
 
+    # Knees (leg extension quality)
+    angles['left_knee'] = calculate_angle(
+        landmarks, L['left_hip'], L['left_knee'], L['left_ankle']
+    )
+
+    angles['right_knee'] = calculate_angle(
+        landmarks, L['right_hip'], L['right_knee'], L['right_ankle']
+    )
+
     return angles
 
 

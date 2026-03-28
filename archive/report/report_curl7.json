@@ -1,0 +1,105 @@
+{
+  "input_video": "input\\input.mp4",
+  "output_video": "output\\output_curl7.mp4",
+  "exercise": "bicep_curl",
+  "video": {
+    "width": 1920,
+    "height": 854,
+    "fps": 30,
+    "total_frames": 389,
+    "estimated_total_frames": 389
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 194,
+    "descent_trigger": 121.9,
+    "ascent_threshold": 162.6,
+    "angle_min": 76.1,
+    "angle_max": 177.9
+  },
+  "confidence": {
+    "threshold": 0.55,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 389
+  },
+  "summary": {
+    "total_reps": 4,
+    "avg_score": 95.5,
+    "valid_reps": 4,
+    "invalid_reps": 0,
+    "issue_counts": {
+      "no_lockout": 1,
+      "inconsistent_depth": 1
+    },
+    "top_issues": [
+      "no_lockout",
+      "inconsistent_depth"
+    ]
+  },
+  "rep_reports": [
+    {
+      "rep_number": 1,
+      "feedback": [
+        "Good curl contraction",
+        "Did not fully extend between reps",
+        "Stable upper body"
+      ],
+      "score": 94,
+      "is_valid": true,
+      "issues": [
+        "no_lockout"
+      ],
+      "warnings": [
+        "no_lockout"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 2,
+      "feedback": [
+        "Inconsistent curl depth",
+        "Stable upper body"
+      ],
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "inconsistent_depth"
+      ],
+      "warnings": [
+        "inconsistent_depth"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 3,
+      "feedback": [
+        "Good curl contraction",
+        "Stable upper body"
+      ],
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 4,
+      "feedback": [
+        "Good curl contraction",
+        "Stable upper body"
+      ],
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    }
+  ],
+  "angle_stats": {
+    "sampled_count": 0,
+    "sampled_min": null,
+    "sampled_max": null,
+    "sampled_avg": null
+  }
+}

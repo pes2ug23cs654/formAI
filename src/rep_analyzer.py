@@ -8,6 +8,7 @@ class RepAnalyzer:
     def reset(self):
         self.elbows = []
         self.hips = []
+        self.knees = []
         self.head_flags = []
         self.hand_flags = []
 
@@ -17,6 +18,7 @@ class RepAnalyzer:
 
         elbow = angles.get('left_elbow') or angles.get('right_elbow')
         hip   = angles.get('left_hip') or angles.get('right_hip')
+        knee  = angles.get('left_knee') or angles.get('right_knee')
 
         # ── SMOOTH ELBOW (IMPORTANT 🔥)
         if elbow:
@@ -26,6 +28,9 @@ class RepAnalyzer:
 
         if hip:
             self.hips.append(hip)
+
+        if knee:
+            self.knees.append(knee)
 
         # ── HEAD CHECK
         if self.is_head_dropping(landmarks):
@@ -97,6 +102,12 @@ class RepAnalyzer:
                 feedback.append("Hips too high")
             else:
                 feedback.append("Good body alignment")
+
+        # ── LEG EXTENSION (SEVERE ONLY IF REALLY BENT)
+        if self.knees:
+            min_knee = np.percentile(self.knees, 20)
+            if min_knee < 155:
+                feedback.append("Knees bent too much")
 
         # ── HEAD (ONLY IF CONSISTENT)
         if len(self.head_flags) > len(self.elbows) * 0.7:

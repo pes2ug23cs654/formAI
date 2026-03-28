@@ -12,8 +12,8 @@ class TemporalEngine:
         if value is None:
             return None
         
-        # Aggressive outlier rejection (>45° jump = tracking noise)
-        if self.last_raw is not None and abs(value - self.last_raw) > 45:
+        # Keep true fast-motion transitions; reject only extreme jumps.
+        if self.last_raw is not None and abs(value - self.last_raw) > 70:
             if self.buffer:
                 value = sum(self.buffer) / len(self.buffer)
         

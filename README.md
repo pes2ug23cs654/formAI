@@ -3,6 +3,7 @@
 ## Quick Start
 
 ### 1. Activate Virtual Environment
+
 ```bash
 # Windows
 .\venv\Scripts\activate
@@ -12,29 +13,63 @@ source venv/bin/activate
 ```
 
 ### 2. Install Dependencies (if not already installed)
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run on a Video
+### 3. Run on a Video (New CLI)
+
 ```bash
-python video_processor.py <input_video.mp4> <output_video.mp4>
+python app.py --input <input_video.mp4> --output <output_video.mp4> --report-json <report.json>
 ```
 
+Supported exercises:
+
+- `pushup`
+- `squat`
+- `lunge`
+- `bicep_curl`
+- `shoulder_press`
+- `situp`
+- `mountain_climber`
+
 **Example:**
+
 ```bash
-python video_processor.py input.mp4 output.mp4
-python video_processor.py long.mp4 output_long.mp4
+python app.py --input input/input.mp4 --output output/output.mp4 --report-json report/report.json
+python app.py --input input/long.mp4 --output output/output_long.mp4 --report-json report/report_long.json
+python app.py --exercise squat --input input/input.mp4 --output output/output_squat.mp4 --report-json report/report_squat.json
+python app.py --exercise bicep_curl --input input/input.mp4 --output output/output_curl.mp4 --report-json report/report_curl.json
+
+# Optional tuning
+python app.py --input input/input.mp4 --output output/output.mp4 --report-json report/report.json --calibration-seconds 10 --confidence-threshold 0.55
+```
+
+You can still run the legacy script directly:
+
+```bash
+python video_processor.py input/input.mp4
 ```
 
 ### 4. What to Expect
 
 **Output:**
+
 - Console output with rep counts and form feedback
 - Generated video file with skeleton overlay
 - Real-time angle measurements and state transitions
+- Structured JSON report with rep-level scoring and validity
+- Calibration metadata (dynamic thresholds)
+- Confidence gating metadata (low-confidence frame tracking)
+
+**Short video fallback:**
+
+- If video length is shorter than calibration duration, FormAI auto-falls back to reduced calibration frames.
+- If still not enough calibration samples are available, it safely uses default thresholds.
 
 **Sample Output:**
+
 ```
 [FRAME   50] Angle:  147.3° | State: DOWN
 
@@ -57,17 +92,32 @@ Total reps: 4
 ==================================================
 ```
 
+### 5. Frontend (Streamlit)
+
+Run the frontend app:
+
+```bash
+streamlit run web/app_streamlit.py
+```
+
+What you get:
+
+- Upload video or reuse `input/input.mp4`
+- Select exercise type
+- Run analysis from a web interface
+- See output video preview + metrics + rep details
+
 ---
 
 ## Available Test Videos
 
-| Video | Duration | Expected Reps | Status |
-|-------|----------|---------------|--------|
-| `input.mp4` | 40 sec | 4 | ✅ Working |
-| `long.mp4` | 60 sec | ~30 | ✅ Detecting (12+) |
-| `input2.mp4` | ? | ? | Available |
-| `2.mp4` | ? | ? | Available |
-| `wrong.mp4` | ? | ? | Available |
+| Video        | Duration | Expected Reps | Status             |
+| ------------ | -------- | ------------- | ------------------ |
+| `input.mp4`  | 40 sec   | 4             | ✅ Working         |
+| `long.mp4`   | 60 sec   | ~30           | ✅ Detecting (12+) |
+| `input2.mp4` | ?        | ?             | Available          |
+| `2.mp4`      | ?        | ?             | Available          |
+| `wrong.mp4`  | ?        | ?             | Available          |
 
 ---
 
@@ -89,11 +139,11 @@ video_processor.py (Main)
 
 ### Joint Angle Standards (Correct Push-up Form)
 
-| Joint | Optimal | Good Range | Warning |
-|-------|---------|-----------|---------|
-| **Elbow (bottom)** | 90° | 75-95° | <70° (hyperextension) or >110° (shallow) |
-| **Hip** | 175° | 170-185° | <150° (sagging) or >190° (pike) |
-| **Knee** | 180° | 175-180° | <170° (bent legs) |
+| Joint              | Optimal | Good Range | Warning                                  |
+| ------------------ | ------- | ---------- | ---------------------------------------- |
+| **Elbow (bottom)** | 90°     | 75-95°     | <70° (hyperextension) or >110° (shallow) |
+| **Hip**            | 175°    | 170-185°   | <150° (sagging) or >190° (pike)          |
+| **Knee**           | 180°    | 175-180°   | <170° (bent legs)                        |
 
 ### Injury Indicators 🚨
 
@@ -107,20 +157,24 @@ video_processor.py (Main)
 ## Key Features
 
 ✅ **Accurate Rep Detection**
+
 - Simple UP/DOWN state machine (reliable)
 - Thresholds: DOWN at <120°, UP at >150°
 
 ✅ **Comprehensive Form Analysis**
+
 - Quality score (0-100) per rep
 - Elbow, hip, knee angle measurements
 - Injury risk assessment
 - Specific corrections for each issue
 
 ✅ **Adaptive to Different People**
+
 - Works with any height/body proportions
 - Auto-calibrates to individual's motion range
 
 ✅ **Real-time Feedback**
+
 - Per-frame angle tracking
 - Per-rep quality report
 - Cumulative statistics
@@ -130,15 +184,18 @@ video_processor.py (Main)
 ## Troubleshooting
 
 **No reps detected?**
+
 - Check that video shows someone doing pushups
 - Ensure good lighting and clear body visibility
 - Try a different input video
 
 **Video processing is slow?**
+
 - This is normal for full processing with MediaPipe
 - Processing speed depends on frame rate and resolution
 
 **Error: Module not found?**
+
 ```bash
 # Reinstall dependencies
 pip install --upgrade -r requirements.txt
@@ -149,9 +206,11 @@ pip install --upgrade -r requirements.txt
 ## Files Overview
 
 ### Core (video_processor.py)
+
 Main entry point that orchestrates the entire pipeline
 
 ### src/ (Python Modules)
+
 - `pose_estimator.py` - MediaPipe BlazePose integration
 - `angle_engine.py` - Vector angle calculations
 - `temporal_engine.py` - Angle smoothing & outlier rejection
@@ -162,6 +221,7 @@ Main entry point that orchestrates the entire pipeline
 - `exercise_rules.py` - Push-up validation rules
 
 ### Data
+
 - `assests/reference_pushup.json` - Reference angle data
 - Input videos: `input.mp4`, `long.mp4`, etc.
 

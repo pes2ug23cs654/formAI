@@ -1,0 +1,67 @@
+{
+  "input_video": "input_short.mp4",
+  "output_video": "output_short.mp4",
+  "video": {
+    "width": 1920,
+    "height": 854,
+    "fps": 30,
+    "total_frames": 60,
+    "estimated_total_frames": 60
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 30,
+    "descent_trigger": 95.0,
+    "ascent_threshold": 145.0,
+    "angle_min": 72.3,
+    "angle_max": 78.8
+  },
+  "confidence": {
+    "threshold": 0.55,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 60
+  },
+  "summary": {
+    "total_reps": 1,
+    "avg_score": 88.0,
+    "valid_reps": 1,
+    "invalid_reps": 0,
+    "issue_counts": {
+      "head_drop": 1,
+      "no_lockout": 1
+    },
+    "top_issues": [
+      "head_drop",
+      "no_lockout"
+    ]
+  },
+  "rep_reports": [
+    {
+      "rep_number": 1,
+      "feedback": [
+        "Good depth",
+        "Did not fully extend arms",
+        "Good body alignment",
+        "Head dropping"
+      ],
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "head_drop",
+        "no_lockout"
+      ],
+      "warnings": [
+        "head_drop",
+        "no_lockout"
+      ],
+      "invalid_reasons": []
+    }
+  ],
+  "angle_stats": {
+    "sampled_count": 0,
+    "sampled_min": null,
+    "sampled_max": null,
+    "sampled_avg": null
+  }
+}

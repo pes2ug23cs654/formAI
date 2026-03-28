@@ -1,0 +1,759 @@
+{
+  "input_video": "input/input2_pushup_30.mp4",
+  "output_video": "output/check_input2_startup_guard.mp4",
+  "exercise": "pushup",
+  "video": {
+    "width": 1912,
+    "height": 938,
+    "fps": 30,
+    "total_frames": 1164,
+    "estimated_total_frames": 1164
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 90,
+    "descent_trigger": 126.6,
+    "ascent_threshold": 156.9,
+    "angle_min": 92.6,
+    "angle_max": 168.2
+  },
+  "confidence": {
+    "threshold": 0.5,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 1164,
+    "readiness_rejected_frames": 408,
+    "floor_clearance_rejected_frames": 124,
+    "posture_hint_counts": {
+      "knees_too_low": 124,
+      "chest_too_low": 0,
+      "missing_floor_reference": 0
+    }
+  },
+  "summary": {
+    "total_reps": 39,
+    "avg_score": 99.4,
+    "valid_reps": 39,
+    "invalid_reps": 0,
+    "issue_counts": {
+      "hip_sag": 2
+    },
+    "top_issues": [
+      "hip_sag"
+    ],
+    "coaching_tips": [
+      "Push-up setup rejected often: keep knees and chest off floor in plank position.",
+      "Straighten legs more; avoid knee-supported reps."
+    ]
+  },
+  "rep_reports": [
+    {
+      "rep_number": 1,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\ud83d\udea8 Hips sagging - keep body straight (maintain 170\u00b0+)",
+        "\u274c Knees bending - keep legs straight (170\u00b0+)",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "hip_sag"
+      ],
+      "warnings": [
+        "hip_sag"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 2,
+      "feedback": [
+        "\u274c Not going deep enough - aim for 75-90\u00b0 at bottom",
+        "\u2713 Good arm extension at top",
+        "\ud83d\udea8 Hips sagging - keep body straight (maintain 170\u00b0+)",
+        "\u274c Knees bending - keep legs straight (170\u00b0+)",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "hip_sag"
+      ],
+      "warnings": [
+        "hip_sag"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 3,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 4,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 5,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 6,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 7,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 8,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 9,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 10,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 11,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 12,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 13,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 14,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 15,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 16,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 17,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 18,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 19,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 20,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 21,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 22,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 23,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 24,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 25,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 26,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 27,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 28,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 29,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 30,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 31,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 32,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 33,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 34,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 35,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 36,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 37,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 38,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 39,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 100,
+      "is_valid": true,
+      "issues": [],
+      "warnings": [],
+      "invalid_reasons": []
+    }
+  ],
+  "angle_stats": {
+    "sampled_count": 0,
+    "sampled_min": null,
+    "sampled_max": null,
+    "sampled_avg": null
+  }
+}
