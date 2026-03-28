@@ -36,9 +36,23 @@ def get_elbow(landmarks, angles):
 def process_video(video_path, output_path, exercise="pushup"):
     cap = cv2.VideoCapture(video_path)
 
+    if not cap.isOpened():
+        raise ValueError(f"Unable to open input video: {video_path}")
+
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    fps = float(cap.get(cv2.CAP_PROP_FPS))
+
+    if width <= 0 or height <= 0:
+        ok, probe = cap.read()
+        if not ok or probe is None:
+            cap.release()
+            raise ValueError(f"Unable to read frames from input video: {video_path}")
+        height, width = probe.shape[:2]
+        cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+    if fps <= 1:
+        fps = 30.0
 
     out = cv2.VideoWriter(
         output_path,
@@ -46,6 +60,18 @@ def process_video(video_path, output_path, exercise="pushup"):
         fps,
         (width, height)
     )
+
+    if not out.isOpened():
+        out = cv2.VideoWriter(
+            output_path,
+            cv2.VideoWriter_fourcc(*'avc1'),
+            fps,
+            (width, height)
+        )
+
+    if not out.isOpened():
+        cap.release()
+        raise ValueError(f"Unable to create output video: {output_path}")
 
     estimator = PoseEstimator()
     session = SessionAnalyzer()
@@ -81,6 +107,8 @@ def process_video(video_path, output_path, exercise="pushup"):
         angles = get_all_angles(landmarks)
 
         if landmarks is None:
+            if frame.shape[1] != width or frame.shape[0] != height:
+                frame = cv2.resize(frame, (width, height))
             out.write(frame)
             continue
 
@@ -186,6 +214,8 @@ def process_video(video_path, output_path, exercise="pushup"):
         cv2.putText(frame, f"Stage: {stage}", (20, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
+        if frame.shape[1] != width or frame.shape[0] != height:
+            frame = cv2.resize(frame, (width, height))
         out.write(frame)
 
     cap.release()

@@ -1,0 +1,10 @@
+body {
+    background-color: #0e1117;
+    color: white;
+}
+
+.stMetric {
+    background-color: #1c1f26;
+    padding: 10px;
+    border-radius: 10px;
+}
