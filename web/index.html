@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FormAI — Form analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__inner">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <div class="brand__text">
+          <h1 class="brand__name">FormAI</h1>
+          <p class="brand__tagline">Biomechanics feedback for push-ups and squats</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="layout__main">
+      <section class="card card--toolbar">
+        <div class="toolbar">
+          <div class="toolbar__group">
+            <span class="label">Mode</span>
+            <div class="pill-group" role="tablist">
+              <button type="button" class="pill pill--active" data-mode="live" id="btn-mode-live">Live</button>
+              <button type="button" class="pill" data-mode="static" id="btn-mode-static">Upload video</button>
+            </div>
+          </div>
+          <div class="toolbar__group">
+            <label class="label" for="exercise">Movement</label>
+            <select id="exercise" class="input-select">
+              <option value="pushup">Push-up</option>
+              <option value="squat">Squat</option>
+            </select>
+          </div>
+          <div class="toolbar__group toolbar__group--grow" id="live-controls">
+            <div class="toolbar__actions">
+              <button type="button" class="btn btn--primary" id="btn-start-live">Start camera</button>
+              <button type="button" class="btn btn--ghost" id="btn-stop-live" disabled>Stop</button>
+            </div>
+            <p id="live-status" class="inline-status" aria-live="polite"></p>
+          </div>
+          <div class="toolbar__group toolbar__group--wide hidden" id="static-controls">
+            <label class="label" for="video-file">Source file</label>
+            <div class="file-row">
+              <input type="file" id="video-file" class="input-file" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,.mp4,.mov,.avi,.webm,.mkv" />
+              <button type="button" class="btn btn--primary" id="btn-process-static">Process &amp; annotate</button>
+            </div>
+            <p id="static-status" class="inline-status" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card card--stage">
+        <div class="stage-head">
+          <h2 class="stage-title" id="stage-heading">Live analysis</h2>
+          <p class="stage-sub" id="stage-sub">Pose overlay and coaching update in real time.</p>
+        </div>
+
+        <div id="view-live" class="stage-view">
+          <div class="capture-src" aria-hidden="true">
+            <video id="cam" playsinline muted autoplay></video>
+            <canvas id="cap" width="640" height="480"></canvas>
+          </div>
+          <div class="frame-shell">
+            <img id="out-live" class="frame-img" alt="Annotated live frame" width="640" height="480" />
+            <div class="frame-placeholder" id="live-placeholder">
+              <span>Start the camera to see annotated feedback</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="view-static" class="stage-view hidden">
+          <div class="frame-shell frame-shell--video">
+            <video id="out-static" class="frame-video" controls playsinline></video>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="layout__aside">
+      <section class="card card--coach">
+        <div class="coach-head">
+          <h2 class="coach-title">Coach</h2>
+          <p class="coach-desc">Live: updates each rep. Upload: summary when processing completes.</p>
+        </div>
+        <dl class="metric-grid">
+          <div class="metric metric--compact">
+            <dt>Reps</dt>
+            <dd id="m-reps">—</dd>
+          </div>
+          <div class="metric metric--compact">
+            <dt>Score</dt>
+            <dd id="m-score">—</dd>
+          </div>
+          <div class="metric metric--wide">
+            <dt>Feedback</dt>
+            <dd id="m-feedback">—</dd>
+          </div>
+        </dl>
+        <p id="m-live" class="cue-banner"></p>
+        <h3 class="detail-heading">Details</h3>
+        <ul id="feedback-list" class="detail-list"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
