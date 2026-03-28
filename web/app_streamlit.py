@@ -1,81 +1,33 @@
 import json
-from pathlib import Path
-import re
 import sys
-import subprocess
-import time
-from typing import Any
+from pathlib import Path
 
-import cv2
 import streamlit as st
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+from formai_core import (
+    BASE_DIR,
+    CANONICAL_INPUT,
+    CANONICAL_OUTPUT,
+    CANONICAL_REPORT,
+    INPUT_DIR,
+    MODE_LIBRARY,
+    MODE_LIVE,
+    MODE_UPLOAD,
+    UPLOAD_INPUT,
+    build_holistic_feedback,
+    get_demo_input_video,
+    get_guide_image_for_exercise,
+    get_web_preview_video,
+    list_input_videos,
+    run_live_webcam_assessment,
+)
+from src.exercise_profiles import list_exercise_keys
+from video_processor import process_video
+
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from src.exercise_profiles import list_exercise_keys
-from src.exercise_profiles import get_exercise_profile, build_analyzer
-from src.pose_estimator import PoseEstimator
-from src.angle_engine import get_all_angles
-from src.temporal_engine import TemporalEngine
-from src.rep_counter import RepCounter
-from src.scorer import score_rep, summarize_session
-from src.exercise_rep_validation import ExerciseRepValidator
-from video_processor import process_video
-from video_processor import (
-    get_primary_angle_with_confidence,
-    _estimate_floor_y,
-    _compute_pushup_floor_clearance,
-    is_pushup_ready_for_count,
-)
-
-try:
-    import imageio_ffmpeg
-except ModuleNotFoundError:
-    imageio_ffmpeg = None
-
-
-INPUT_DIR = BASE_DIR / "input"
-OUTPUT_DIR = BASE_DIR / "output"
-REPORT_DIR = BASE_DIR / "report"
-
-INPUT_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-REPORT_DIR.mkdir(parents=True, exist_ok=True)
-
-CANONICAL_INPUT = INPUT_DIR / "input.mp4"
-UPLOAD_INPUT = INPUT_DIR / "uploaded.mp4"
-CANONICAL_OUTPUT = OUTPUT_DIR / "output.mp4"
-WEB_OUTPUT = OUTPUT_DIR / "output_web.mp4"
-CANONICAL_REPORT = REPORT_DIR / "report.json"
-PICS_DIR = BASE_DIR / "pics"
-VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi"}
-IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
-
-MODE_LIBRARY = "Input folder"
-MODE_UPLOAD = "Upload file"
-MODE_LIVE = "Live webcam"
-FEEDBACK_TEXT_OCEAN_BLUE = (148, 105, 0)
-FEEDBACK_BG_WHITE = (255, 255, 255)
-FEEDBACK_BORDER_BLACK = (0, 0, 0)
-
-
 st.set_page_config(page_title="FormAI Coach", page_icon="AI", layout="wide")
-
-
-ISSUE_TO_TIP = {
-    "shallow_depth": "Increase range of motion and hit deeper reps consistently.",
-    "short_range_of_motion": "Complete full contraction and full extension for each rep.",
-    "no_lockout": "Finish each rep fully at the top before starting the next one.",
-    "hip_sag": "Keep your core braced and maintain a more stable torso.",
-    "forward_lean": "Keep your torso more upright to reduce compensation.",
-    "inconsistent_depth": "Keep tempo steady and match depth across reps.",
-    "momentum_cheat": "Slow down slightly and avoid using momentum to move weight.",
-    "neck_strain": "Keep neck neutral and avoid pulling from the neck.",
-    "knee_valgus": "Track knees in line with toes to improve joint alignment.", 
-    "core_instability": "Brace your core before each rep and control transitions.",
-    "joint_stress": "Avoid forcing end range; use smooth, controlled depth.",
-}
 
 
 def inject_ui_theme() -> None:
@@ -214,7 +166,7 @@ def render_executive_summary(exercise_key: str, summary: dict) -> None:
             '<p class="exec-title">Executive Summary</p>'
             f'<p class="exec-line">{exercise_key} • {verdict}</p>'
             f'<p class="exec-line">Reps: {total_reps} | Valid: {valid_reps} | Consistency: {consistency:.0f}% | Avg score: {int(round(avg_score))}</p>'
-            '</div>'
+            "</div>"
         ),
         unsafe_allow_html=True,
     )
@@ -273,290 +225,8 @@ def render_live_report(report: dict) -> None:
         st.write(report.get("live", {}))
 
 
-def build_holistic_feedback(exercise_key: str, summary: dict) -> list[str]:
-    """Create session-level actionable feedback from summary metrics."""
-    tips = []
-
-    for tip in summary.get("coaching_tips", []) or []:
-        if tip and tip not in tips:
-            tips.append(str(tip))
-
-    raw_issue_counts = summary.get("issue_counts", {}) or {}
-    issue_counts: dict[str, int] = {}
-    if isinstance(raw_issue_counts, dict):
-        for key, value in raw_issue_counts.items():
-            if isinstance(key, str):
-                try:
-                    issue_counts[key] = int(value)
-                except (TypeError, ValueError):
-                    continue
-
-    if issue_counts:
-        top_issue_keys = sorted(issue_counts.keys(), key=lambda k: issue_counts[k], reverse=True)[:3]
-        for key in top_issue_keys:
-            mapped_tip = ISSUE_TO_TIP.get(key)
-            if mapped_tip and mapped_tip not in tips:
-                tips.append(mapped_tip)
-
-    total_reps = int(summary.get("total_reps", 0) or 0)
-    valid_reps = int(summary.get("valid_reps", 0) or 0)
-    if total_reps > 0:
-        consistency = (valid_reps / total_reps) * 100.0
-        if consistency < 70:
-            tips.append("Focus on consistent setup each rep before increasing speed.")
-        elif consistency < 90:
-            tips.append("Good session overall; prioritize consistency on every rep.")
-
-    avg_score = float(summary.get("avg_score", 0) or 0)
-    if avg_score >= 90 and total_reps > 0:
-        tips.append("Strong form overall. Next step: maintain quality at a steady tempo.")
-
-    if not tips:
-        tips.append("No major issues detected. Keep this setup and range for future sets.")
-
-    return tips[:5]
-
-
 inject_ui_theme()
 render_hero()
-
-
-def _clean_feedback_for_overlay(message: str | None, max_chars: int = 72) -> str:
-    """Normalize feedback text so webcam overlays stay readable."""
-    if message is None:
-        return ""
-
-    text = str(message).strip()
-    if not text:
-        return ""
-
-    # OpenCV Hershey fonts cannot render Unicode icons (✓ ⚠ ❌ 🚨), so keep ASCII only.
-    text = text.encode("ascii", "ignore").decode("ascii")
-
-    text = re.sub(r"^[^A-Za-z0-9]+", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    if len(text) > max_chars:
-        return text[: max_chars - 3].rstrip() + "..."
-    return text
-
-
-def _feedback_lines_for_overlay(feedback: list[str], max_lines: int = 2, max_chars: int = 66) -> list[str]:
-    lines: list[str] = []
-    seen: set[str] = set()
-    for message in feedback or []:
-        line = _clean_feedback_for_overlay(message, max_chars=max_chars)
-        if not line:
-            continue
-        key = line.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        lines.append(line)
-        if len(lines) >= max_lines:
-            break
-    return lines
-
-
-def _draw_feedback_badge(frame, text: str, x: int, y: int, font_scale: float = 0.54, thickness: int = 1) -> None:
-    """Draw compact feedback badge with ocean-blue text and subtle white background."""
-    if not text:
-        return
-
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    (text_w, text_h), baseline = cv2.getTextSize(text, font, font_scale, thickness)
-    pad_x = 4
-    pad_y = 3
-
-    top_left = (x - pad_x, y - text_h - pad_y)
-    bottom_right = (x + text_w + pad_x, y + baseline + pad_y)
-
-    overlay = frame.copy()
-    cv2.rectangle(overlay, top_left, bottom_right, FEEDBACK_BG_WHITE, -1)
-    cv2.addWeighted(overlay, 0.78, frame, 0.22, 0, frame)
-    cv2.rectangle(frame, top_left, bottom_right, FEEDBACK_BORDER_BLACK, 1)
-    cv2.putText(frame, text, (x, y), font, font_scale, FEEDBACK_TEXT_OCEAN_BLUE, thickness)
-
-
-def run_live_webcam_assessment(
-    exercise: str,
-    calibration_seconds: int,
-    confidence_threshold: float,
-    duration_seconds: int,
-    camera_index: int,
-):
-    """Run timed live webcam assessment and return report dict."""
-    profile = get_exercise_profile(exercise)
-    estimator = PoseEstimator()
-    temporal = TemporalEngine(buffer_size=2 if profile.key == "pushup" else 3)
-    counter = RepCounter(
-        descent_trigger=profile.default_descent_trigger,
-        ascent_threshold=profile.default_ascent_threshold,
-        require_initial_lockout=(profile.key == "pushup"),
-        initial_lockout_frames=2,
-    )
-    analyzer: Any = build_analyzer(profile.key)
-
-    cap = cv2.VideoCapture(camera_index)
-    if not cap.isOpened():
-        raise ValueError("Could not open webcam. Check camera permission and index.")
-
-    fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
-
-    reps = 0
-    rep_reports = []
-    last_feedback = []
-    last_rep_score = None
-    last_rep_valid = None
-    last_validation_reason = ""
-    floor_y_estimate = None
-    frame_count = 0
-    low_confidence_frames = 0
-    calibration_frames = max(10, int(calibration_seconds * fps))
-    calibration_angles = []
-
-    frame_box = st.empty()
-    stats_box = st.empty()
-    status_box = st.empty()
-    status_box.info("Live assessment running. Keep full body visible from side angle.")
-
-    start_time = time.time()
-    elapsed = 0.0
-    try:
-        while True:
-            elapsed = time.time() - start_time
-            if elapsed >= float(duration_seconds):
-                break
-
-            ret, frame = cap.read()
-            if not ret:
-                continue
-
-            frame_count += 1
-
-            results = estimator.process_frame(frame)
-            landmarks = estimator.get_landmarks(results, frame.shape)
-
-            if landmarks is not None:
-                angles = get_all_angles(landmarks)
-                primary_angle, primary_confidence, _ = get_primary_angle_with_confidence(profile, landmarks, angles)
-
-                if primary_angle is not None and frame_count <= calibration_frames:
-                    calibration_angles.append(primary_angle)
-
-                analysis_conf_ok = primary_angle is not None and primary_confidence >= confidence_threshold
-                count_conf_threshold = confidence_threshold
-                if profile.key == "pushup":
-                    count_conf_threshold = max(0.40, confidence_threshold - 0.10)
-                count_conf_ok = primary_angle is not None and primary_confidence >= count_conf_threshold
-
-                if not count_conf_ok:
-                    low_confidence_frames += 1
-
-                smooth_angle = temporal.smooth(primary_angle) if count_conf_ok else temporal.last_valid
-                stage = temporal.detect_stage(smooth_angle)
-
-                if analysis_conf_ok:
-                    analyzer.collect(landmarks, angles)
-
-                if profile.key == "pushup":
-                    floor_y_estimate = _estimate_floor_y(landmarks, floor_y_estimate)
-                    floor_clearance = _compute_pushup_floor_clearance(landmarks, floor_y_estimate)
-                    _ = is_pushup_ready_for_count(angles, floor_clearance=floor_clearance)
-
-                if count_conf_ok and counter.update(smooth_angle):
-                    if profile.key == "pushup" and reps == 0 and frame_count <= max(30, int(1.0 * fps)):
-                        analyzer.reset()
-                        continue
-
-                    feedback = analyzer.evaluate()
-                    rep_score = score_rep(feedback)
-                    should_count_rep, validation_reason = ExerciseRepValidator.validate_rep(
-                        profile.key, rep_score, feedback
-                    )
-
-                    reps += 1
-                    if not should_count_rep:
-                        rep_score["is_valid"] = False
-                        invalid_reasons = set(rep_score.get("invalid_reasons", []))
-                        invalid_reasons.add("rep_rejected")
-                        rep_score["invalid_reasons"] = sorted(invalid_reasons)
-
-                    rep_reports.append(
-                        {
-                            "rep_number": reps,
-                            "feedback": feedback,
-                            "counted_valid": bool(should_count_rep),
-                            "validation_reason": validation_reason,
-                            **rep_score,
-                        }
-                    )
-                    last_feedback = feedback[:2]
-                    last_rep_score = rep_score.get("score")
-                    last_rep_valid = bool(should_count_rep)
-                    last_validation_reason = validation_reason
-                    analyzer.reset()
-
-                frame = estimator.draw_skeleton(frame, results)
-                cv2.putText(frame, f"Reps: {reps}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.putText(frame, f"Stage: {stage}", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-
-                score_text = "Score: --"
-                score_color = (220, 220, 220)
-                if last_rep_score is not None:
-                    score_text = f"Score: {int(round(last_rep_score))}/100"
-                    if last_rep_score >= 80:
-                        score_color = (0, 200, 0)
-                    elif last_rep_score >= 60:
-                        score_color = (0, 180, 255)
-                    else:
-                        score_color = (0, 0, 255)
-                cv2.putText(frame, score_text, (20, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.72, score_color, 2)
-
-                if last_rep_valid is not None:
-                    validity_text = "Quality: Valid rep" if last_rep_valid else "Quality: Needs correction"
-                    validity_color = (0, 200, 0) if last_rep_valid else (0, 0, 255)
-                    cv2.putText(frame, validity_text, (20, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.62, validity_color, 2)
-
-                overlay_feedback = _feedback_lines_for_overlay(last_feedback, max_lines=2, max_chars=56)
-                if (not last_rep_valid) and last_validation_reason:
-                    reason_line = _clean_feedback_for_overlay(last_validation_reason, max_chars=56)
-                    if reason_line and reason_line.lower() not in {line.lower() for line in overlay_feedback}:
-                        overlay_feedback.insert(0, reason_line)
-                        overlay_feedback = overlay_feedback[:2]
-
-                if overlay_feedback:
-                    _draw_feedback_badge(frame, overlay_feedback[0], 20, 175, font_scale=0.54, thickness=1)
-                if len(overlay_feedback) > 1:
-                    _draw_feedback_badge(frame, overlay_feedback[1], 20, 201, font_scale=0.54, thickness=1)
-
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_box.image(rgb_frame, channels="RGB", use_container_width=True)
-
-            stats_box.markdown(
-                f"**Elapsed:** {elapsed:.1f}s / {duration_seconds}s | "
-                f"**Detected reps:** {reps} | "
-                f"**Low-confidence frames:** {low_confidence_frames} | "
-                f"**Last rep score:** {('--' if last_rep_score is None else int(round(last_rep_score)))}"
-            )
-    finally:
-        cap.release()
-        status_box.success("Live session finished.")
-
-    summary = summarize_session(rep_reports)
-    summary["total_reps"] = reps
-
-    return {
-        "exercise": profile.key,
-        "summary": summary,
-        "rep_reports": rep_reports,
-        "live": {
-            "duration_seconds": duration_seconds,
-            "fps_assumed": fps,
-            "processed_frames": frame_count,
-            "low_confidence_frames": low_confidence_frames,
-            "calibration_samples": len(calibration_angles),
-        },
-    }
 
 
 def render_video(path: Path, label: str):
@@ -581,106 +251,41 @@ def render_video(path: Path, label: str):
     )
 
 
-def list_input_videos() -> list[Path]:
-    """List videos available in input directory."""
-    videos = [p for p in INPUT_DIR.iterdir() if p.is_file() and p.suffix.lower() in VIDEO_EXTENSIONS]
-    return sorted(videos, key=lambda p: p.name.lower())
+def run_streamlit_live(
+    exercise: str,
+    calibration_seconds: int,
+    confidence_threshold: float,
+    duration_seconds: int,
+    camera_index: int,
+):
+    frame_box = st.empty()
+    stats_box = st.empty()
+    status_box = st.empty()
 
+    def status_callback(message: str, level: str) -> None:
+        if level == "info":
+            status_box.info(message)
+        elif level == "success":
+            status_box.success(message)
+        else:
+            status_box.warning(message)
 
-def get_demo_input_video(available_videos: list[Path]) -> Path | None:
-    """Pick a best-effort demo video from input folder for one-click quick run."""
-    preferred_names = ["input.mp4", "uploaded.mp4"]
-    by_name = {p.name.lower(): p for p in available_videos}
-    for name in preferred_names:
-        if name in by_name:
-            return by_name[name]
-    return available_videos[0] if available_videos else None
+    return run_live_webcam_assessment(
+        exercise,
+        calibration_seconds,
+        confidence_threshold,
+        duration_seconds,
+        camera_index,
+        frame_callback=lambda rgb: frame_box.image(rgb, channels="RGB", use_container_width=True),
+        stats_callback=lambda el, dur, reps, low_conf, last_score: stats_box.markdown(
+            f"**Elapsed:** {el:.1f}s / {dur}s | "
+            f"**Detected reps:** {reps} | "
+            f"**Low-confidence frames:** {low_conf} | "
+            f"**Last rep score:** {('--' if last_score is None else int(round(last_score)))}"
+        ),
+        status_callback=status_callback,
+    )
 
-
-def _normalize_exercise_name(value: str) -> str:
-    cleaned = value.lower().replace("_", " ").replace("-", " ").strip()
-    cleaned = " ".join(cleaned.split())
-    return cleaned
-
-
-def get_guide_image_for_exercise(exercise_key: str) -> Path | None:
-    """Find best matching guide image in pics folder for selected exercise."""
-    if not PICS_DIR.exists():
-        return None
-
-    files = [p for p in PICS_DIR.iterdir() if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS]
-    if not files:
-        return None
-
-    target = _normalize_exercise_name(exercise_key)
-
-    synonyms = {
-        "pushup": {"pushup", "push up", "pushups", "push ups"},
-        "squat": {"squat", "squats"},
-        "lunge": {"lunge", "lunges"},
-        "bicep curl": {"bicep curl", "biceps curl", "bicep curls", "biceps curls", "curl", "curls"},
-        "shoulder press": {"shoulder press", "shoulder presses", "overhead press"},
-        "situp": {"situp", "sit up", "situps", "sit ups", "sit-up", "sit-ups"},
-        "mountain climber": {"mountain climber", "mountain climbers", "climber", "climbers"},
-    }
-
-    target_aliases = set()
-    if target in synonyms:
-        target_aliases = synonyms[target]
-    else:
-        target_aliases = {target}
-
-    best_match = None
-    for file_path in files:
-        name = _normalize_exercise_name(file_path.stem)
-        if name in target_aliases:
-            return file_path
-        if any(alias in name for alias in target_aliases):
-            best_match = file_path
-
-    return best_match
-
-
-def get_web_preview_video(source_path: Path) -> tuple[Path, str | None]:
-    """Return browser-friendly video path, transcoding if needed."""
-    if not source_path.exists():
-        return source_path, "Output video file not found"
-
-    if imageio_ffmpeg is None:
-        return source_path, "Preview transcoding unavailable: install imageio-ffmpeg for browser-optimized output"
-
-    # Reuse converted file only when it is strictly newer than source.
-    # This avoids stale preview reuse when both files share same-second mtime.
-    if (
-        WEB_OUTPUT.exists()
-        and WEB_OUTPUT.stat().st_size > 0
-        and WEB_OUTPUT.stat().st_mtime > source_path.stat().st_mtime
-    ):
-        return WEB_OUTPUT, None
-
-    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-    cmd = [
-        ffmpeg_exe,
-        "-y",
-        "-i",
-        str(source_path),
-        "-vcodec",
-        "libx264",
-        "-pix_fmt",
-        "yuv420p",
-        "-movflags",
-        "+faststart",
-        "-an",
-        str(WEB_OUTPUT),
-    ]
-
-    try:
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
-        if WEB_OUTPUT.exists() and WEB_OUTPUT.stat().st_size > 0:
-            return WEB_OUTPUT, None
-        return source_path, "Converted preview video was empty"
-    except Exception as exc:
-        return source_path, f"Could not transcode for web preview: {exc}"
 
 with st.sidebar:
     st.header("Session Setup")
@@ -739,7 +344,10 @@ if source_mode == MODE_UPLOAD:
 left, right = st.columns([1.0, 1.35])
 
 with left:
-    st.markdown('<div class="step-card"><h3>Step 1: Input</h3><p>Pick a source, verify preview, then run analysis.</p></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="step-card"><h3>Step 1: Input</h3><p>Pick a source, verify preview, then run analysis.</p></div>',
+        unsafe_allow_html=True,
+    )
 
     input_path = CANONICAL_INPUT
 
@@ -778,12 +386,15 @@ with left:
             st.caption("Add a sample video in input/ to enable Demo Day Quick Run.")
 
 with right:
-    st.markdown('<div class="step-card"><h3>Step 2: Output</h3><p>Review metrics, top issues, and actionable feedback.</p></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="step-card"><h3>Step 2: Output</h3><p>Review metrics, top issues, and actionable feedback.</p></div>',
+        unsafe_allow_html=True,
+    )
 
     if run_clicked or demo_clicked:
         if source_mode == MODE_LIVE:
             with st.spinner("Starting webcam assessment..."):
-                report = run_live_webcam_assessment(
+                report = run_streamlit_live(
                     exercise=exercise,
                     calibration_seconds=calibration_seconds,
                     confidence_threshold=confidence_threshold,

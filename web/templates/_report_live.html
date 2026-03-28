@@ -1,0 +1,44 @@
+{% set summary = live_report.get('summary', {}) or {} %}
+{% set exercise_key = live_report.get('exercise', '-') %}
+{% set total_reps = (summary.get('total_reps', 0) or 0)|int %}
+{% set valid_reps = (summary.get('valid_reps', 0) or 0)|int %}
+{% set avg_score = (summary.get('avg_score', 0) or 0)|float %}
+{% set consistency = (valid_reps / total_reps * 100) if total_reps else 0 %}
+
+{% if total_reps == 0 %}
+  {% set verdict = "No measurable reps detected yet" %}
+{% elif avg_score >= 85 and consistency >= 85 %}
+  {% set verdict = "Excellent form session" %}
+{% elif avg_score >= 70 and consistency >= 70 %}
+  {% set verdict = "Solid form with room to improve" %}
+{% else %}
+  {% set verdict = "Needs focused technique work" %}
+{% endif %}
+
+<div class="exec-card">
+  <p class="exec-title">Executive Summary</p>
+  <p class="exec-line">{{ exercise_key }} • {{ verdict }}</p>
+  <p class="exec-line">Reps: {{ total_reps }} | Valid: {{ valid_reps }} | Consistency: {{ consistency|round|int }}% | Avg score: {{ avg_score|round|int }}</p>
+</div>
+
+<div class="metrics">
+  <div class="metric"><div class="label">Exercise</div><div class="value">{{ exercise_key }}</div></div>
+  <div class="metric"><div class="label">Total Reps</div><div class="value">{{ total_reps }}</div></div>
+  <div class="metric"><div class="label">Valid Reps</div><div class="value">{{ valid_reps }}</div></div>
+  <div class="metric"><div class="label">Avg Score</div><div class="value">{{ avg_score|round|int }}</div></div>
+</div>
+<p class="caption">Rep consistency: {{ consistency|round|int }}%</p>
+
+<h3 style="margin-top:1rem;color:var(--primary);font-size:1rem;">Coaching Feedback</h3>
+<ul class="feedback">
+  {% for tip in coaching_tips %}
+  <li>{{ tip }}</li>
+  {% endfor %}
+</ul>
+
+<details class="diagnostics">
+  <summary>Live session diagnostics</summary>
+  <pre style="font-size:0.8rem;overflow:auto;">{{ live_report.get('live', {}) }}</pre>
+</details>
+
+<p class="caption" style="margin-top:1rem;"><a href="{{ url_for('index') }}">← Back to home</a></p>

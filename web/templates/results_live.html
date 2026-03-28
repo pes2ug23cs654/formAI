@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Live session report — FormAI{% endblock %}
+{% block body %}
+<div class="layout" style="grid-template-columns:1fr;">
+  <div class="hero">
+    <h1>Live session report</h1>
+    <p>Summary from your webcam assessment.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% include "_report_live.html" %}
+</div>
+{% endblock %}

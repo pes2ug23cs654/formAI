@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Live session — FormAI{% endblock %}
+{% block body %}
+<div class="layout" style="grid-template-columns:1fr;">
+  <div class="hero">
+    <h1>Live assessment</h1>
+    <p>Keep full body visible from a side angle. Session ends automatically when the timer finishes.</p>
+  </div>
+
+  <div class="step-card">
+    <img class="live-feed" src="{{ url_for('live_stream') }}" alt="Live feed">
+    <p id="live-stats" class="caption" style="margin-top:0.75rem;">Starting…</p>
+    <p id="live-done" class="alert alert-success" style="display:none;">Live session finished. <a href="{{ url_for('live_results') }}">View report</a></p>
+  </div>
+</div>
+
+<script>
+(function() {
+  function poll() {
+    fetch("{{ url_for('live_status') }}", { credentials: "same-origin" })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.error) {
+          document.getElementById("live-stats").textContent = "Error: " + data.error;
+          var done = document.getElementById("live-done");
+          done.innerHTML = '<a href="{{ url_for("index") }}">Back to home</a>';
+          done.className = "alert alert-error";
+          done.style.display = "block";
+          return;
+        }
+        var s = data.stats || {};
+        document.getElementById("live-stats").textContent =
+          "Elapsed: " + (s.elapsed != null ? s.elapsed.toFixed(1) : "?") + "s / " + (s.duration_seconds || "?") + "s | " +
+          "Detected reps: " + (s.reps != null ? s.reps : "?") + " | " +
+          "Low-confidence frames: " + (s.low_confidence_frames != null ? s.low_confidence_frames : "?") + " | " +
+          "Last rep score: " + (s.last_rep_score != null ? Math.round(s.last_rep_score) : "--");
+        if (data.done) {
+          document.getElementById("live-done").style.display = "block";
+          return;
+        }
+        setTimeout(poll, 400);
+      })
+      .catch(function() { setTimeout(poll, 800); });
+  }
+  poll();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Analysis results — FormAI{% endblock %}
+{% block body %}
+<div class="layout" style="grid-template-columns:1fr;">
+  <div class="hero">
+    <h1>Session report</h1>
+    <p>Review your analyzed output, metrics, and coaching feedback.</p>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <p><a href="{{ url_for('index') }}">← Back to home</a> · <a href="{{ url_for('results') }}">Refresh latest</a></p>
+
+  {% include "_report_video.html" %}
+
+  <footer class="caption">Outputs are saved to output/output.mp4 and report/report.json</footer>
+</div>
+{% endblock %}

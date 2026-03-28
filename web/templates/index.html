@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="layout">
+  <div class="hero">
+    <h1>FormAI Exercise Coach</h1>
+    <p>Upload or stream your workout, get rep counts, quality scores, and coaching feedback in one clean flow.</p>
+  </div>
+
+  <aside class="sidebar">
+    <h2>Session setup</h2>
+    <form method="post" action="{{ url_for('submit') }}" enctype="multipart/form-data" id="main-form">
+      <label for="exercise">Exercise</label>
+      <select name="exercise" id="exercise">
+        {% for key in exercise_keys %}
+        <option value="{{ key }}" {% if key == default_exercise %}selected{% endif %}>{{ key }}</option>
+        {% endfor %}
+      </select>
+
+      <details>
+        <summary>Advanced detection settings</summary>
+        <label for="calibration_seconds">Calibration seconds</label>
+        <input type="number" name="calibration_seconds" id="calibration_seconds" min="3" max="15" value="{{ default_calibration }}">
+
+        <label for="confidence_threshold">Confidence threshold</label>
+        <input type="number" name="confidence_threshold" id="confidence_threshold" min="0.3" max="0.9" step="0.05" value="{{ default_confidence }}">
+      </details>
+
+      <h3 style="margin:1rem 0 0.35rem;font-size:0.95rem;color:var(--primary);">Guide</h3>
+      <div id="guide-box">
+        <img id="guide-img" class="guide-img" alt="Exercise reference" style="display:none;">
+        <p id="guide-none" class="caption" style="display:none;">No reference image in <code>pics/</code> for this exercise.</p>
+      </div>
+
+      <h3 style="margin:1rem 0 0.35rem;font-size:0.95rem;color:var(--primary);">Source</h3>
+      <div class="radio-row">
+        <label><input type="radio" name="source_mode" value="{{ mode_library }}" {% if default_mode == mode_library %}checked{% endif %}> Input folder</label>
+        <label><input type="radio" name="source_mode" value="{{ mode_upload }}" {% if default_mode == mode_upload %}checked{% endif %}> Upload file</label>
+        <label><input type="radio" name="source_mode" value="{{ mode_live }}" {% if default_mode == mode_live %}checked{% endif %}> Live webcam</label>
+      </div>
+
+      <div id="block-library" class="mode-block">
+        <label for="selected_video">Choose existing input video</label>
+        <select name="selected_video" id="selected_video">
+          {% for name in video_names %}
+          <option value="{{ name }}" {% if name == default_video %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+        {% if not video_names %}
+        <p class="alert alert-warn">No videos in input folder. Upload a file instead.</p>
+        {% endif %}
+      </div>
+
+      <div id="block-upload" class="mode-block" style="display:none;">
+        <label for="video_file">Upload MP4 / MOV / MKV / AVI</label>
+        <input type="file" name="video_file" id="video_file" accept=".mp4,.mov,.mkv,.avi,video/*">
+      </div>
+
+      <div id="block-live" class="mode-block" style="display:none;">
+        <label for="live_duration_seconds">Live session duration (seconds)</label>
+        <input type="number" name="live_duration_seconds" id="live_duration_seconds" min="10" max="120" step="5" value="20">
+        <label for="camera_index">Camera index</label>
+        <input type="number" name="camera_index" id="camera_index" min="0" max="5" value="0">
+      </div>
+
+      <div class="step-card" style="margin-top:1rem;">
+        <h3>Step 1: Input</h3>
+        <p>Pick a source, preview below, then run analysis or live assessment.</p>
+      </div>
+
+      <div id="input-preview-section" style="margin-top:0.75rem;">
+        <p class="caption" id="input-preview-title">Input preview</p>
+        <video id="input-preview-video" controls playsinline style="width:100%;max-height:280px;border-radius:10px;background:#111;display:none;"></video>
+        <p id="input-preview-live-hint" class="alert alert-info" style="display:none;">Live mode uses your webcam after you start the session.</p>
+      </div>
+
+      <button type="submit" name="action" value="run" class="btn btn-primary" id="btn-run">Run analysis</button>
+      {% if demo_available %}
+      <button type="submit" name="action" value="demo" class="btn btn-secondary">Demo Day Quick Run</button>
+      <p class="caption">One-click demo uses: {{ demo_name }}</p>
+      {% else %}
+      <p class="caption">Add a sample video in input/ to enable Demo Day Quick Run.</p>
+      {% endif %}
+    </form>
+  </aside>
+
+  <main class="main">
+    <div class="step-card">
+      <h3>Step 2: Output</h3>
+      <p>Review metrics, top issues, and actionable feedback after you run analysis.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if show_latest and video_report %}
+    <p class="alert alert-info">Showing latest saved output.</p>
+    {% include "_report_video.html" %}
+    {% elif not show_latest %}
+    <p class="alert alert-info">Run analysis to see a professional session report here, or open <a href="{{ url_for('results') }}">latest results</a>.</p>
+    {% endif %}
+  </main>
+</div>
+
+<footer class="caption layout" style="grid-column:1/-1;">Outputs are saved to output/output.mp4 and report/report.json</footer>
+
+<script>
+(function() {
+  const MODE_LIBRARY = {{ mode_library | tojson }};
+  const MODE_UPLOAD = {{ mode_upload | tojson }};
+  const MODE_LIVE = {{ mode_live | tojson }};
+  const GUIDE_URLS = {{ guide_urls | tojson }};
+  const LIBRARY_URLS = {{ library_video_urls | tojson }};
+
+  let uploadObjectUrl = null;
+
+  const exerciseSel = document.getElementById("exercise");
+  const videoSel = document.getElementById("selected_video");
+  const fileInput = document.getElementById("video_file");
+  const previewVideo = document.getElementById("input-preview-video");
+  const previewTitle = document.getElementById("input-preview-title");
+  const liveHint = document.getElementById("input-preview-live-hint");
+  const guideImg = document.getElementById("guide-img");
+  const guideNone = document.getElementById("guide-none");
+
+  function updateGuide() {
+    const ex = exerciseSel.value;
+    const url = GUIDE_URLS[ex];
+    if (url) {
+      guideImg.src = url;
+      guideImg.style.display = "block";
+      guideNone.style.display = "none";
+    } else {
+      guideImg.removeAttribute("src");
+      guideImg.style.display = "none";
+      guideNone.style.display = "block";
+    }
+  }
+
+  function currentMode() {
+    const r = document.querySelector('input[name="source_mode"]:checked');
+    return r ? r.value : MODE_LIBRARY;
+  }
+
+  function setPreviewFromLibrary() {
+    const name = videoSel.value;
+    const url = LIBRARY_URLS[name];
+    if (url) {
+      previewVideo.src = url;
+      previewVideo.style.display = "block";
+      previewTitle.textContent = "Input preview (library)";
+      previewTitle.style.display = "block";
+    } else {
+      previewVideo.removeAttribute("src");
+      previewVideo.style.display = "none";
+      previewTitle.style.display = "none";
+    }
+  }
+
+  function setPreviewFromUpload() {
+    const f = fileInput.files && fileInput.files[0];
+    if (uploadObjectUrl) {
+      URL.revokeObjectURL(uploadObjectUrl);
+      uploadObjectUrl = null;
+    }
+    if (f) {
+      uploadObjectUrl = URL.createObjectURL(f);
+      previewVideo.src = uploadObjectUrl;
+      previewVideo.style.display = "block";
+      previewTitle.textContent = "Input preview (selected file — upload runs on submit)";
+      previewTitle.style.display = "block";
+    } else {
+      previewVideo.removeAttribute("src");
+      previewVideo.style.display = "none";
+      previewTitle.textContent = "Input preview";
+    }
+  }
+
+  function syncInputPreview() {
+    const mode = currentMode();
+    liveHint.style.display = mode === MODE_LIVE ? "block" : "none";
+    if (mode === MODE_LIVE) {
+      previewVideo.removeAttribute("src");
+      previewVideo.style.display = "none";
+      previewTitle.style.display = "none";
+      return;
+    }
+    if (mode === MODE_LIBRARY) {
+      setPreviewFromLibrary();
+      return;
+    }
+    if (mode === MODE_UPLOAD) {
+      setPreviewFromUpload();
+      if (!fileInput.files || !fileInput.files[0]) {
+        previewVideo.style.display = "none";
+        previewTitle.textContent = "Choose a file to see preview";
+        previewTitle.style.display = "block";
+      }
+    }
+  }
+
+  function syncMode() {
+    const r = document.querySelector('input[name="source_mode"]:checked');
+    if (!r) return;
+    const v = r.value;
+    document.getElementById("block-library").style.display = v === MODE_LIBRARY ? "block" : "none";
+    document.getElementById("block-upload").style.display = v === MODE_UPLOAD ? "block" : "none";
+    document.getElementById("block-live").style.display = v === MODE_LIVE ? "block" : "none";
+    const runBtn = document.getElementById("btn-run");
+    if (v === MODE_LIVE) {
+      runBtn.textContent = "Start Live Assessment";
+      runBtn.name = "action";
+      runBtn.value = "live";
+    } else {
+      runBtn.textContent = "Run analysis";
+      runBtn.name = "action";
+      runBtn.value = "run";
+    }
+    syncInputPreview();
+  }
+
+  exerciseSel.addEventListener("change", updateGuide);
+  videoSel.addEventListener("change", syncInputPreview);
+  fileInput.addEventListener("change", syncInputPreview);
+
+  document.querySelectorAll('input[name="source_mode"]').forEach(function(el) {
+    el.addEventListener("change", syncMode);
+  });
+
+  updateGuide();
+  syncMode();
+})();
+</script>
+{% endblock %}
