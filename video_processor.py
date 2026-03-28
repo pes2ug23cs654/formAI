@@ -427,7 +427,7 @@ def process_video(
 
     out = cv2.VideoWriter(
         output_path,
-        cv2.VideoWriter_fourcc(*'mp4v'),
+        cv2.VideoWriter_fourcc(*'mp4v'),  # type: ignore[attr-defined]
         fps,
         (width, height)
     )
@@ -440,7 +440,7 @@ def process_video(
         require_initial_lockout=(profile.key == "pushup"),
         initial_lockout_frames=max(2, int(round(0.06 * fps))),
     )
-    analyzer = build_analyzer(profile.key)
+    analyzer = build_analyzer(profile.key)  # type: ignore[attr-defined]
 
     reps = 0
     last_feedback = []
@@ -558,7 +558,7 @@ def process_video(
         # Collect analysis only on reliable frames to reduce false warnings.
         if analysis_confidence_ok:
             used_for_rep_logic_frames += 1
-            analyzer.collect(landmarks, angles)
+            analyzer.collect(landmarks, angles)  # type: ignore[attr-defined]
 
         count_ready = True
         current_posture_hints = []
@@ -619,17 +619,17 @@ def process_video(
                             f"[REP SKIPPED] startup window (frame={frame_count}, guard={startup_frames_guard})",
                             flush=True,
                         )
-                    analyzer.reset()
+                    analyzer.reset()  # type: ignore[attr-defined]
                     continue
 
             is_full_rep, full_rep_reason = _passes_full_rep_gate(profile.key, completed_angles)
             if not is_full_rep:
                 if debug:
                     print(f"[REP SKIPPED] {profile.key} {full_rep_reason}", flush=True)
-                analyzer.reset()
+                analyzer.reset()  # type: ignore[attr-defined]
                 continue
 
-            last_feedback = analyzer.evaluate()
+            last_feedback = analyzer.evaluate()  # type: ignore[attr-defined]
             rep_score = score_rep(last_feedback)
 
             # ─── EXERCISE-SPECIFIC REP VALIDATION ──────────────────────
@@ -668,7 +668,7 @@ def process_video(
                 print(f"  - Valid: {rep_score['is_valid']}", flush=True)
                 print(f"  - Counted: {should_count_rep}", flush=True)
 
-            analyzer.reset()
+            analyzer.reset()  # type: ignore[attr-defined]
 
         # DRAW
         frame = estimator.draw_skeleton(frame, results)
@@ -722,11 +722,11 @@ def process_video(
             if not is_full_rep:
                 if debug:
                     print(f"[REP SKIPPED] final {profile.key} {full_rep_reason}", flush=True)
-                analyzer.reset()
+                analyzer.reset()  # type: ignore[attr-defined]
             else:
-                analyzer.collect(None, None)  # Empty collect to mark completion
+                analyzer.collect(None, None)  # type: ignore[attr-defined]  # Empty collect to mark completion
                 try:
-                    feedback = analyzer.evaluate()
+                    feedback = analyzer.evaluate()  # type: ignore[attr-defined]
                     last_feedback = feedback[:3]  # Show last 3 lines
                     rep_score = score_rep(feedback)
                     
