@@ -25,9 +25,11 @@ class PoseEstimator:
         landmarks = {}
 
         for i, lm in enumerate(results.pose_landmarks.landmark):
+            # Extract 3D coordinates (x, y: pixels; z: normalized depth)
             landmarks[i] = {
                 "x": int(lm.x * w),
                 "y": int(lm.y * h),
+                "z": lm.z,  # Keep normalized [-1, 1] for proper 3D vector scaling
                 "visibility": lm.visibility
             }
 

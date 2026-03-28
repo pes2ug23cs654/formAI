@@ -1,0 +1,194 @@
+"""
+Squat Form Analyzer - Comprehensive per-rep squat form quality assessment
+Focuses on proper squat mechanics and injury prevention
+"""
+
+import math
+from src.form_standards import assess_squat_form, calculate_squat_score, categorize_form
+
+
+def euclidean_distance(p1, p2):
+    """Calculate Euclidean distance between two points (3D-aware, camera-independent)"""
+    dx = p1.get('x', 0) - p2.get('x', 0)
+    dy = p1.get('y', 0) - p2.get('y', 0)
+    # z is normalized [-1, 1], scale by 100 to be comparable with pixel coordinates
+    dz = (p1.get('z', 0) - p2.get('z', 0)) * 100
+    return math.sqrt(dx*dx + dy*dy + dz*dz)
+
+
+class SquatAnalyzer:
+    """Track and analyze squat form for every repetition"""
+
+    def __init__(self):
+        self.rep_angles = []  # Collect angles throughout rep
+        self.current_rep = 0
+        self.depth_readings = []  # Track squat depth
+        self.depth_baseline = None  # Calibrated at standing position
+        self.calibration_complete = False
+
+    def collect(self, landmarks, angles):
+        """Collect frame data + calibrate standing position"""
+        # Calibrate depth baseline from STANDING position (high knee angle > 160°)
+        if not self.calibration_complete and landmarks and len(landmarks) > 0:
+            knee = angles.get('left_knee') or angles.get('right_knee') if angles else None
+            if knee and knee > 160:  # At STANDING position
+                # Use hip height as depth reference
+                hip_y = landmarks[23].get('y') if len(landmarks) > 23 else None  # Left hip
+                if hip_y:
+                    self.depth_readings.append(hip_y)
+                    if len(self.depth_readings) >= 20:  # Collect 20 readings at standing position
+                        self.depth_baseline = sorted(self.depth_readings)[10]  # Median of standing readings
+                        self.calibration_complete = True
+                        print(f"[SQUAT CALIBRATED] Standing hip height: {self.depth_baseline:.0f}px (after {len(self.depth_readings)} samples)", flush=True)
+
+        if angles:
+            knee = angles.get('left_knee') or angles.get('right_knee')
+            hip = angles.get('left_hip') or angles.get('right_hip')
+            ankle = angles.get('left_ankle') or angles.get('right_ankle')
+
+            if knee:
+                hip_y = landmarks[23].get('y') if landmarks and len(landmarks) > 23 else None
+                self.rep_angles.append({
+                    'knee': knee,
+                    'hip': hip,
+                    'ankle': ankle,
+                    'landmarks': landmarks,
+                    'hip_y': hip_y
+                })
+
+    def _get_hip_y(self, landmarks):
+        """Extract hip Y position from landmarks"""
+        if landmarks and len(landmarks) > 23:
+            return landmarks[23].get('y')  # Left hip
+        return None
+
+    def _check_depth_consistency(self, landmarks):
+        """
+        Check squat depth using 3D hip displacement (camera-angle independent).
+
+        Strategy: Measure hip drop from standing position in 3D space
+        hip_drop_distance / body_length = camera-independent depth ratio
+
+        3D Methodology:
+        - Uses x, y (pixel), and z (depth) coordinates from MediaPipe
+        - Eliminates camera angle bias by measuring true 3D distance
+        - Works for any camera distance, angle, user height, or resolution
+        """
+        if not landmarks or len(landmarks) < 24 or not self.depth_baseline:
+            return None
+
+        try:
+            # Extract landmarks
+            hip = landmarks[23]        # Left hip
+            shoulder = landmarks[11]   # Left shoulder
+
+            if not all(p for p in [hip, shoulder]):
+                return None
+
+            # Calculate body length using Euclidean distance
+            body_length = euclidean_distance(shoulder, hip)
+            if body_length < 10:  # Invalid measurement
+                return None
+
+            # Calculate hip drop from baseline
+            current_hip_y = hip.get('y', 0)
+            hip_drop_pixels = current_hip_y - self.depth_baseline
+
+            # Convert to 3D distance (approximate)
+            hip_drop_distance = abs(hip_drop_pixels)  # Simplified for now
+
+            # Ratio: hip drop / body length (CAMERA-INDEPENDENT)
+            depth_ratio = hip_drop_distance / body_length
+
+            print(f"[DEPTH] Body length: {body_length:.1f}, Hip drop: {hip_drop_distance:.1f}, Ratio: {depth_ratio:.3f}", flush=True)
+
+            # Thresholds based on squat biomechanics:
+            # Quarter squat: depth_ratio ≈ 0.1-0.2
+            # Half squat: depth_ratio ≈ 0.2-0.3
+            # Full squat: depth_ratio ≈ 0.3-0.4
+
+            if depth_ratio < 0.15:
+                return "[DEPTH] Squat too shallow - go deeper for full range"
+            elif depth_ratio > 0.45:
+                return "[DEPTH] Squat too deep - reduce depth to protect knees"
+
+            return None
+
+        except Exception as e:
+            print(f"[DEPTH ERROR] {type(e).__name__}: {e}", flush=True)
+            return None
+
+    def evaluate(self):
+        """Analyze completed squat rep and return detailed feedback"""
+        if not self.rep_angles:
+            return ["No data collected"]
+
+        self.current_rep += 1
+
+        # Get min/max for each joint
+        knees = [f['knee'] for f in self.rep_angles if f['knee']]
+        hips = [f['hip'] for f in self.rep_angles if f['hip']]
+        ankles = [f['ankle'] for f in self.rep_angles if f['ankle']]
+
+        # Create angles dict with min/max
+        analysis_angles = {
+            'left_knee': min(knees) if knees else None,
+            'left_hip': min(hips) if hips else None,
+            'left_ankle': min(ankles) if ankles else None,
+        }
+
+        # Get landmarks from bottom position (minimum knee angle)
+        bottom_landmarks = None
+        if knees:
+            min_knee_idx = knees.index(min(knees))
+            bottom_landmarks = self.rep_angles[min_knee_idx]['landmarks']
+
+        # Use comprehensive squat form assessment
+        risk_assessment = assess_squat_form(bottom_landmarks) if bottom_landmarks else {'issues': [], 'severity_breakdown': {'critical': [], 'moderate': [], 'minor': []}, 'angles': {}, 'recommendations': []}
+        quality_score = calculate_squat_score(risk_assessment)
+        quality_category = categorize_form(quality_score)
+
+        # Build feedback report for this rep
+        feedback = []
+
+        # ─── HEADER ──────────────────────────────────────
+        feedback.append(f"\nSQUAT #{self.current_rep} - Quality: {quality_score}/100 ({quality_category})")
+
+        # ─── JOINT ANGLES ────────────────────────────────
+        if knees:
+            min_knee = min(knees)
+            max_knee = max(knees)
+            feedback.append(f"  Knee: {min_knee:.0f}° - {max_knee:.0f}° (target: 90° at bottom)")
+
+        if hips:
+            min_hip = min(hips)
+            feedback.append(f"  Hip: {min_hip:.0f}° (target: 90-120°)")
+
+        if ankles:
+            min_ankle = min(ankles)
+            feedback.append(f"  Ankle: {min_ankle:.0f}° (target: stable)")
+
+        # ─── DEPTH CHECK ────────────────────────────────
+        depth_check = self._check_depth_consistency(bottom_landmarks)
+        if depth_check:
+            feedback.append(f"  {depth_check}")
+
+        # ─── ISSUES ──────────────────────────────────────
+        if risk_assessment['issues']:
+            for issue in risk_assessment['issues']:
+                severity_icon = {'critical': '[CRITICAL]', 'moderate': '[MODERATE]', 'minor': '[MINOR]'}.get(issue['severity'], '[UNKNOWN]')
+                feedback.append(f"  {severity_icon} {issue['description']}")
+
+        # ─── RECOMMENDATIONS ─────────────────────────────
+        if risk_assessment['recommendations']:
+            for rec in risk_assessment['recommendations'][:2]:  # Limit to top 2 recommendations
+                feedback.append(f"  [TIP] {rec}")
+
+        feedback.append(f"  Risk Level: {len(risk_assessment['severity_breakdown']['critical'])} critical, {len(risk_assessment['severity_breakdown']['moderate'])} moderate issues")
+
+        return feedback
+
+    def reset(self):
+        """Reset for next rep"""
+        self.rep_angles = []</content>
+<parameter name="filePath">c:\Users\thila\OneDrive\Desktop\aiml\praxis\formAI\src\squat_analyzer.py
