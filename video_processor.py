@@ -75,6 +75,7 @@ def process_video(video_path, output_path, exercise="pushup"):
 
         frame_count += 1
         stage = "N/A"
+        live_msg = ""
 
         results = estimator.process_frame(frame)
         landmarks = estimator.get_landmarks(results, frame.shape)
@@ -92,48 +93,33 @@ def process_video(video_path, output_path, exercise="pushup"):
             if smooth_angle is not None:
                 stage = temporal.detect_stage(smooth_angle)
 
-            # DEBUG
             if frame_count % 50 == 0 and smooth_angle is not None:
-                left = angles.get('left_elbow')
-                right = angles.get('right_elbow')
-                print(f"[F{frame_count}] Angle:{smooth_angle:.1f}° (L:{left} R:{right}) | State:{counter.state}")
+                print(f"[F{frame_count}] Angle:{smooth_angle:.1f}° | State:{counter.state}")
 
             analyzer.collect(landmarks, angles)
 
-            if counter.update(smooth_angle):
+            if smooth_angle is not None and counter.update(smooth_angle):
                 reps += 1
 
-                from src.form_standards import assess_injury_risk, get_form_quality_score
+                feedback_lines = analyzer.evaluate()
 
-                elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
-                hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
+                score = 0
+                issues = []
 
-                analysis_angles = {
-                    'left_elbow': min(elbows) if elbows else None,
-                    'left_hip': min(hips) if hips else None,
-                }
-
-                risk = assess_injury_risk(analysis_angles, None)
-                score = get_form_quality_score(risk)
+                for line in feedback_lines:
+                    if "Quality:" in line:
+                        score = int(line.split("Quality:")[1].split("/")[0])
+                    if "[ISSUE]" in line:
+                        issues.append(line)
 
                 session.add_rep({
                     'rep_num': reps,
                     'score': score,
-                    'issues': risk.get('issues', []),
-                    'feedback': risk.get('feedback', [])
+                    'issues': issues,
+                    'feedback': feedback_lines
                 })
 
-                print(f"\n[REP {reps}] Score: {score}/100")
-
-                positives = [f for f in risk['feedback'] if "[GOOD]" in f]
-                if positives:
-                    print(f"  ✓ {positives[0].replace('[GOOD] ', '')}")
-                else:
-                    print("  ✓ Form acceptable")
-
-                for issue in risk['issues'][:2]:
-                    print(f"  ⚠ {issue.replace('_', ' ').title()}")
-
+                print("\n".join(feedback_lines))
                 analyzer.reset()
 
         # ================= SQUATS =================
@@ -144,20 +130,50 @@ def process_video(video_path, output_path, exercise="pushup"):
             if smooth_angle is not None:
                 stage = temporal.detect_stage(smooth_angle)
 
+                # ===== REAL-TIME COACHING =====
+                shoulder = landmarks[11]
+                hip = landmarks[23]
+                knee = landmarks[25]
+                ankle = landmarks[27]
+
+                # Depth
+                if smooth_angle > 100:
+                    live_msg = "Go deeper"
+
+                # Back posture
+                dx = shoulder['x'] - hip['x']
+                dy = shoulder['y'] - hip['y']
+                back_angle = abs(np.degrees(np.arctan2(dy, dx)))
+
+                if back_angle < 50:
+                    live_msg = "Keep chest up"
+
+                # Hip hinge
+                body_length = np.linalg.norm([
+                    hip['x'] - shoulder['x'],
+                    hip['y'] - shoulder['y']
+                ])
+
+                hip_shift = abs(hip['x'] - ankle['x'])
+                ratio = hip_shift / (body_length + 1e-6)
+
+                if ratio < 0.15:
+                    live_msg = "Push hips back"
+
+            # DEBUG
             if frame_count % 50 == 0 and smooth_angle is not None:
                 print(f"[F{frame_count}] Knee:{smooth_angle:.1f}° | State:{counter.state}")
 
-            if counter.update(smooth_angle,landmarks):
+            # ✅ REP DETECTION FIXED
+            if smooth_angle is not None and counter.update(smooth_angle, landmarks):
                 reps += 1
                 rep_angles = counter.get_last_rep()
 
                 if rep_angles:
                     landmarks_seq = counter.get_last_landmarks()
-
                     result = squat_analyzer.analyze(rep_angles, landmarks_seq)
 
                     print(f"\n[SQUAT {reps}] Score: {result['score']}/100")
-
                     print(f"  → Knee Angle: {result['knee_angle']:.1f}°")
 
                     for fb in result["feedback"]:
@@ -165,14 +181,11 @@ def process_video(video_path, output_path, exercise="pushup"):
 
                     for issue in result["issues"][:3]:
                         print(f"  ⚠ {issue.replace('_', ' ').title()}")
-                        
 
                     squat_history.append({
                         "score": result["score"],
                         "issues": result["issues"]
                     })
-                else:
-                    print(f"\n[SQUAT {reps}] Completed")
 
         # ================= DRAW =================
         frame = estimator.draw_skeleton(frame, results)
@@ -186,54 +199,39 @@ def process_video(video_path, output_path, exercise="pushup"):
         cv2.putText(frame, f"Stage: {stage}", (20, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
 
+        if live_msg:
+            cv2.putText(frame, live_msg, (20, 140),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 3)
+
         out.write(frame)
 
     cap.release()
     out.release()
 
-# ================= SUMMARY =================
-
-# ===== PUSHUP SUMMARY =====
+    # ================= SUMMARY =================
     if exercise == "pushup":
         report = session.analyze()
 
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print(f"SESSION SUMMARY - {reps} Reps Completed")
-        print("="*50)
+        print("=" * 50)
 
-    # SAFE SCORE
-        avg_score = report.get("avg_score") or report.get("average_score") or report.get("overall_score")
-
-        if avg_score is None:
-            scores = []
-            if hasattr(session, "reps"):
-                scores = [r.get("score", 0) for r in session.reps]
-            avg_score = sum(scores) // len(scores) if scores else 0
-
+        avg_score = report.get("overall_score", 0)
         print(f"Overall Quality: {avg_score}/100")
 
-    # ISSUES
-        if report.get("issues"):
+        if report.get("primary_issues"):
             print("\n🎯 PRIMARY FORM ISSUES:")
-            for issue, count in report["issues"].items():
+            for issue, count in report["primary_issues"]:
                 print(f"  • {issue}: {count}/{reps} reps")
 
-    # TIPS
-        print("\n💡 COACH TIPS:")
-        for tip in report.get("feedback", []):
-            print(f"  → {tip}")
+        print("\n💡 COACH FEEDBACK:")
+        for line in report.get("feedback", []):
+            print(line)
 
-    # ANGLES
-        all_angles = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
-        if all_angles:
-            print(f"\nAngle range: {min(all_angles):.1f}° - {max(all_angles):.1f}°")
-
-
-# ===== SQUAT SUMMARY =====
     elif exercise == "squat" and squat_history:
-        print("\n" + "="*50)
+        print("\n" + "=" * 50)
         print(f"SESSION SUMMARY - {reps} Reps Completed")
-        print("="*50)
+        print("=" * 50)
 
         avg_score = sum(r["score"] for r in squat_history) // len(squat_history)
         print(f"Overall Quality: {avg_score}/100")
@@ -246,24 +244,13 @@ def process_video(video_path, output_path, exercise="pushup"):
         if issue_count:
             print("\n🎯 PRIMARY ISSUES:")
             for k, v in issue_count.items():
-                readable = k.replace('_', ' ').title()
-                print(f"  • {readable}: {v}/{len(squat_history)} reps")
-        print("\n💡 COACH TIP:")
-        if not issue_count:
-            print("  → Excellent form! Maintain consistency.")
-        else:
-            if "shallow_squat" in issue_count:
-                print("  → Go deeper (target <90° knee angle)")
-            if "poor_hip_hinge" in issue_count:
-                print("  → Push hips back more")
-            if "back_rounding" in issue_count:
-                print("  → Keep chest up and spine neutral")
-            print(f"\nTotal reps analyzed: {len(squat_history)}")
-
+                print(f"  • {k.replace('_', ' ').title()}: {v}/{len(squat_history)} reps")
 
     print("\n==============================")
     print(f"Total reps: {reps}")
     print("==============================")
+
+
 # ================= WEBCAM =================
 def process_webcam(exercise="pushup"):
     cap = cv2.VideoCapture(0)
@@ -292,7 +279,7 @@ def process_webcam(exercise="pushup"):
             break
 
         stage = "N/A"
-
+        live_msg = ""
         results = estimator.process_frame(frame)
         landmarks = estimator.get_landmarks(results, frame.shape)
         angles = get_all_angles(landmarks)
@@ -315,35 +302,32 @@ def process_webcam(exercise="pushup"):
                 if counter.update(smooth_angle):
                     reps += 1
 
-                    from src.form_standards import assess_injury_risk, get_form_quality_score
+                    feedback_lines = analyzer.evaluate()
 
-                    elbows = [f['elbow'] for f in analyzer.rep_angles if f['elbow']]
-                    hips = [f['hip'] for f in analyzer.rep_angles if f['hip']]
+                    score = 0
+                    issues = []
 
-                    analysis_angles = {
-                        'left_elbow': min(elbows) if elbows else None,
-                        'left_hip': min(hips) if hips else None,
-                    }
-
-                    risk = assess_injury_risk(analysis_angles, None)
-                    score = get_form_quality_score(risk)
+                    for line in feedback_lines:
+                        if "Quality:" in line:
+                            score = int(line.split("Quality:")[1].split("/")[0])
+                        if "[ISSUE]" in line:
+                            issues.append(line)
 
                     last_feedback = [f"Score: {score}/100"]
 
-                    positives = [f for f in risk['feedback'] if "[GOOD]" in f]
-                    if positives:
-                        last_feedback.append(positives[0].replace("[GOOD] ", ""))
-                    else:
-                        last_feedback.append("Form acceptable")
+                    for line in feedback_lines:
+                        if "[GOOD]" in line:
+                            last_feedback.append(line.replace("[GOOD] ", ""))
+                            break
 
-                    for issue in risk['issues'][:2]:
-                        last_feedback.append(issue.replace("_", " ").title())
+                    for issue in issues[:2]:
+                        last_feedback.append(issue.replace("[ISSUE] ", ""))
 
                     analyzer.reset()
 
             # ===== SQUAT =====
             else:
-                if counter.update(smooth_angle, landmarks):
+                if smooth_angle is not None and counter.update(smooth_angle, landmarks):
                     reps += 1
                     rep_angles = counter.get_last_rep()
                     landmarks_seq = counter.get_last_landmarks()
@@ -358,7 +342,6 @@ def process_webcam(exercise="pushup"):
                     for issue in result["issues"][:2]:
                         last_feedback.append(issue.replace("_", " ").title())
 
-        # DRAW
         frame = estimator.draw_skeleton(frame, results)
 
         cv2.putText(frame, f"{exercise.upper()}", (20, 30),
@@ -368,7 +351,11 @@ def process_webcam(exercise="pushup"):
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         cv2.putText(frame, f"Stage: {stage}", (20, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+        if live_msg:
+            cv2.putText(frame, live_msg, (20, 140),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 3)
 
         cv2.rectangle(frame, (10, 110), (450, 250), (0, 0, 0), -1)
 
