@@ -123,24 +123,24 @@ def assess_injury_risk(angles_dict, landmarks=None):
 
 def get_form_quality_score(risk_assessment):
     """
-    Convert risk assessment to a quality score (0-100)
+    Convert risk assessment to a quality score (0-10)
     """
-    score = 100
+    score = 10
     
     # Deduct for each issue found
-    score -= len(risk_assessment['issues']) * 5
-    score -= len(risk_assessment['flags']) * 15
+    score -= len(risk_assessment['issues']) * 0.5
+    score -= len(risk_assessment['flags']) * 1.5
     
-    return max(0, min(100, score))
+    return max(0, min(10, score))
 
 
 def categorize_form(score):
     """Categorize form quality"""
-    if score >= 90:
+    if score >= 9:
         return "EXCELLENT - Perfect form"
-    elif score >= 75:
+    elif score >= 7.5:
         return "GOOD - Minor adjustments needed"
-    elif score >= 60:
+    elif score >= 6:
         return "FAIR - Multiple form issues"
     else:
         return "POOR - Major form corrections needed"

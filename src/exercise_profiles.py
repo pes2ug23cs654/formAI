@@ -144,13 +144,12 @@ class BicepCurlAnalyzer(AngleWindowAnalyzer):
                 "good_depth": "Good curl contraction",
                 "depth_warn": "Inconsistent curl depth",
                 "lockout_warn": "Did not fully extend between reps",
-                "stand_threshold": 150,
+                "stand_threshold": 165,
                 "hip_warn": "Body swinging too much",
-                "hip_low": 45,
+                "hip_low": 35,
                 "hip_good": "Stable upper body",
             },
         )
-
 
 class ShoulderPressAnalyzer(AngleWindowAnalyzer):
     def __init__(self):

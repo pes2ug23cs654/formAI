@@ -1,0 +1,122 @@
+{
+  "input_video": "C:\\Users\\HP\\OneDrive\\Desktop\\tevin\\sem6\\hackathon\\praxis\\formAI\\input\\mobile_1774681243343.mp4",
+  "output_video": "C:\\Users\\HP\\OneDrive\\Desktop\\tevin\\sem6\\hackathon\\praxis\\formAI\\output\\mobile_1774681243343_output.mp4",
+  "exercise": "pushup",
+  "video": {
+    "width": 1920,
+    "height": 854,
+    "fps": 30,
+    "total_frames": 389,
+    "estimated_total_frames": 389
+  },
+  "calibration": {
+    "used": true,
+    "reason": "calibrated",
+    "sample_count": 90,
+    "descent_trigger": 121.7,
+    "ascent_threshold": 163.8,
+    "angle_min": 74.4,
+    "angle_max": 179.5
+  },
+  "confidence": {
+    "threshold": 0.5,
+    "low_confidence_frames": 0,
+    "used_for_rep_logic_frames": 389,
+    "readiness_rejected_frames": 44,
+    "floor_clearance_rejected_frames": 0,
+    "posture_hint_counts": {
+      "knees_too_low": 0,
+      "chest_too_low": 0,
+      "missing_floor_reference": 0
+    }
+  },
+  "summary": {
+    "total_reps": 3,
+    "avg_score": 84.0,
+    "valid_reps": 3,
+    "invalid_reps": 0,
+    "issue_counts": {
+      "inconsistent_depth": 3,
+      "joint_stress": 1
+    },
+    "top_issues": [
+      "inconsistent_depth",
+      "joint_stress"
+    ]
+  },
+  "rep_reports": [
+    {
+      "rep_number": 1,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "inconsistent_depth"
+      ],
+      "warnings": [
+        "inconsistent_depth"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 2,
+      "feedback": [
+        "\u2713 Good depth (75-95\u00b0 at bottom)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range",
+        "\u2713 Full body alignment: perfect plank position"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 88,
+      "is_valid": true,
+      "issues": [
+        "inconsistent_depth"
+      ],
+      "warnings": [
+        "inconsistent_depth"
+      ],
+      "invalid_reasons": []
+    },
+    {
+      "rep_number": 3,
+      "feedback": [
+        "\u26a0\ufe0f Going too deep - risk of joint stress (stop at 75\u00b0)",
+        "\u2713 Good arm extension at top",
+        "\u2713 Good body alignment (neutral spine)",
+        "\u2713 Legs fully extended",
+        "\u26a0\ufe0f Inconsistent depth - maintain steady range"
+      ],
+      "counted_valid": true,
+      "validation_reason": "Rep counted - acceptable form",
+      "score": 76,
+      "is_valid": true,
+      "issues": [
+        "inconsistent_depth",
+        "joint_stress"
+      ],
+      "warnings": [
+        "inconsistent_depth",
+        "joint_stress"
+      ],
+      "invalid_reasons": []
+    }
+  ],
+  "angle_stats": {
+    "sampled_count": 0,
+    "sampled_min": null,
+    "sampled_max": null,
+    "sampled_avg": null
+  }
+}

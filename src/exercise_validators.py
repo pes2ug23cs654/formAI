@@ -353,71 +353,36 @@ class BicepCurlValidator:
             return ["No valid data"]
         
         feedback = []
-        issues = []
-        score = 100
-        
-        min_elbow = np.percentile(self.elbows, 15)
-        max_elbow = np.percentile(self.elbows, 85)
-        
+        # For curls: max elbow angle is bottom extension, min elbow angle is top contraction.
+        top_angle = float(np.percentile(self.elbows, 15))
+        bottom_angle = float(np.percentile(self.elbows, 85))
+
         # ─────── BOTTOM EXTENSION ──────────
-        if min_elbow < CurlStd.ELBOW_BOTTOM_LENIENT_MIN:
-            feedback.append("✓ Full arm extension at bottom")
-        elif min_elbow < CurlStd.ELBOW_BOTTOM_MIN:
-            feedback.append("⚠️ Slight elbow bend at bottom - straighten fully")
-            issues.append("partial_extension")
-            score -= 15
+        if bottom_angle >= CurlStd.ELBOW_BOTTOM_LENIENT_MIN:
+            feedback.append("Stable upper body")
+        elif bottom_angle >= CurlStd.ELBOW_BOTTOM_MIN:
+            feedback.append("Did not fully extend between reps")
         else:
-            feedback.append("❌ Not fully extending - lock elbows at bottom")
-            issues.append("no_full_extension")
-            score -= 25
-        
+            feedback.append("Did not fully extend between reps")
+
         # ─────── TOP CONTRACTION ───────────
-        if max_elbow > CurlStd.ELBOW_TOP_MAX:
-            feedback.append("⚠️ Past peak contraction - squeeze at top")
-            issues.append("overcontracted")
-            score -= 10
-        elif max_elbow > CurlStd.ELBOW_TOP_LENIENT_MAX:
-            feedback.append("⚠️ Partial range at top - squeeze harder")
-            issues.append("short_range_top")
-            score -= 15
+        if 30 <= top_angle <= 60:
+            feedback.append("Good curl contraction")
+        elif top_angle < 30:
+            feedback.append("Elbow collapsing too much")
+        elif top_angle <= 90:
+            feedback.append("Inconsistent curl depth")
         else:
-            feedback.append("✓ Good peak contraction")
-        
+            feedback.append("Curl range too small")
+
         # ─────── RANGE OF MOTION ───────────
-        total_range = max_elbow - min_elbow
-        if total_range < 100:
-            feedback.append("⚠️ Limited range of motion - full range important")
-            issues.append("limited_rom")
-            score -= 20
-        else:
-            feedback.append("✓ Full range of motion maintained")
-        
-        # ─────── MOMENTUM DETECTION ────────
-        if self.speeds:
-            avg_speed = np.mean(self.speeds)
-            max_speed = np.max(self.speeds)
-            
-            if max_speed > CurlStd.SPEED_THRESHOLD_FAST:
-                feedback.append("⚠️ Using momentum (jerky motion) - control the weight")
-                issues.append("momentum_cheat")
-                score -= 20
-            elif avg_speed < CurlStd.SPEED_THRESHOLD_SLOW:
-                feedback.append("⚠️ Moving too slowly - controls matter but maintain cadence")
-                score -= 5
-            else:
-                feedback.append("✓ Good controlled motion")
-        
-        # ─────── CONSISTENCY ────────────────
-        if len(self.elbows) > 10:
-            cv = np.std(self.elbows) / np.mean(self.elbows) if np.mean(self.elbows) > 0 else 0
-            if cv > 0.12:
-                feedback.append("⚠️ Inconsistent reps - maintain steady form")
-                issues.append("inconsistent_form")
-                score -= 10
-        
-        score = max(0, min(100, score))
-        is_valid = len(issues) < 2
-        
+        total_range = bottom_angle - top_angle
+        if total_range < 65:
+            feedback.append("Limited range of motion")
+
+        # Momentum/consistency checks are intentionally omitted for curls to avoid
+        # punishing normal tempo variation from camera jitter.
+
         return feedback
 
 

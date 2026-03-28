@@ -381,10 +381,13 @@ def _passes_full_rep_gate(exercise_key, completed_angles):
     rep_span = rep_max - rep_min
 
     thresholds = {
-        "pushup": {"min_max": 145.0, "max_min": 115.0, "span_min": 35.0},
-        "squat": {"min_max": 160.0, "max_min": 135.0, "span_min": 28.0},
-        "lunge": {"min_max": 155.0, "max_min": 130.0, "span_min": 25.0},
-        "bicep_curl": {"min_max": 150.0, "max_min": 100.0, "span_min": 50.0},
+        # Pushup gate tuned to avoid missing real reps from camera angle/noise.
+        "pushup": {"min_max": 140.0, "max_min": 125.0, "span_min": 25.0},
+        # User rule: squat bottom knee angle must be below 80 degrees.
+        "squat": {"min_max": 160.0, "max_min": 80.0, "span_min": 28.0},
+        # User rule: lunge bottom knee angle must be below 135 and above 70 degrees.
+        "lunge": {"min_max": 155.0, "max_min": 135.0, "min_min": 70.0, "span_min": 25.0},
+        "bicep_curl": {"min_max": 150.0, "max_min": 90.0, "span_min": 50.0},
         "shoulder_press": {"min_max": 150.0, "max_min": 130.0, "span_min": 22.0},
         "situp": {"min_max": 135.0, "max_min": 115.0, "span_min": 18.0},
         "mountain_climber": {"min_max": 150.0, "max_min": 120.0, "span_min": 25.0},
@@ -396,12 +399,34 @@ def _passes_full_rep_gate(exercise_key, completed_angles):
 
     has_top = rep_max >= rule["min_max"]
     has_bottom = rep_min <= rule["max_min"]
+    has_min_floor = rep_min > rule.get("min_min", float("-inf"))
     has_span = rep_span >= rule["span_min"]
 
-    if has_top and has_bottom and has_span:
+    if has_top and has_bottom and has_min_floor and has_span:
         return True, "full_rep"
 
     return False, f"partial_rep(min={rep_min:.1f},max={rep_max:.1f},span={rep_span:.1f})"
+
+
+def _bicep_angle_quality_score(completed_angles):
+    """Compute a smooth 0-10 quality score from curl elbow trace for score variability."""
+    if not completed_angles:
+        return 0.0
+
+    rep_min = float(min(completed_angles))
+    rep_max = float(max(completed_angles))
+    rep_span = rep_max - rep_min
+
+    # Count gate is max 60 at the top, and strong extension at bottom.
+    target_top = 50.0
+    target_bottom = 165.0
+    target_span = 85.0
+
+    top_term = max(0.0, 1.0 - abs(rep_min - target_top) / 35.0)
+    bottom_term = max(0.0, 1.0 - abs(rep_max - target_bottom) / 30.0)
+    span_term = max(0.0, min(1.0, rep_span / target_span))
+
+    return round(10.0 * (0.45 * top_term + 0.35 * bottom_term + 0.20 * span_term), 1)
 
 
 def process_video(
@@ -629,44 +654,59 @@ def process_video(
                 analyzer.reset()  # type: ignore[attr-defined]
                 continue
 
+            if profile.key == "bicep_curl" and completed_angles:
+                rep_min = float(min(completed_angles))
+                if rep_min > 60.0:
+                    if debug:
+                        print(f"[REP SKIPPED] bicep_curl top angle above 60 (min={rep_min:.1f})", flush=True)
+                    analyzer.reset()  # type: ignore[attr-defined]
+                    continue
+
             last_feedback = analyzer.evaluate()  # type: ignore[attr-defined]
             rep_score = score_rep(last_feedback)
+
+            if profile.key == "bicep_curl":
+                angle_score = _bicep_angle_quality_score(completed_angles)
+                rep_score["score"] = round(0.55 * float(rep_score.get("score", 0)) + 0.45 * angle_score, 1)
 
             # ─── EXERCISE-SPECIFIC REP VALIDATION ──────────────────────
             should_count_rep, validation_reason = ExerciseRepValidator.validate_rep(
                 profile.key, rep_score, last_feedback
             )
 
-            # Count every detected movement rep attempt, and track validity separately.
-            reps += 1
             if not should_count_rep:
                 rep_score["is_valid"] = False
                 invalid_reasons = set(rep_score.get("invalid_reasons", []))
                 invalid_reasons.add("rep_rejected")
                 rep_score["invalid_reasons"] = sorted(invalid_reasons)
+                last_rep_score = rep_score.get("score")
+                last_rep_valid = False
+                last_validation_reason = validation_reason
+                analyzer.reset()  # type: ignore[attr-defined]
+                continue
 
+            reps += 1
             rep_reports.append({
                 "rep_number": reps,
                 "feedback": last_feedback,
-                "counted_valid": bool(should_count_rep),
+                "counted_valid": True,
                 "validation_reason": validation_reason,
                 **rep_score,
             })
             last_rep_score = rep_score.get("score")
-            last_rep_valid = bool(should_count_rep)
+            last_rep_valid = True
             last_validation_reason = validation_reason
 
             if (not should_count_rep) and debug:
                 print(f"[REP FLAGGED INVALID] {profile.key}: {validation_reason}", flush=True)
 
             if debug:
-                shown_rep_number = reps if should_count_rep else reps + 1
-                print(f"\n*** REP {shown_rep_number} ***", flush=True)
+                print(f"\n*** REP {reps} ***", flush=True)
                 for msg in last_feedback:
                     print(f"  - {msg}", flush=True)
                 print(f"  - Score: {rep_score['score']}", flush=True)
                 print(f"  - Valid: {rep_score['is_valid']}", flush=True)
-                print(f"  - Counted: {should_count_rep}", flush=True)
+                print("  - Counted: True", flush=True)
 
             analyzer.reset()  # type: ignore[attr-defined]
 
@@ -683,10 +723,10 @@ def process_video(
         score_text = "Score: --"
         score_color = (220, 220, 220)
         if last_rep_score is not None:
-            score_text = f"Score: {int(round(last_rep_score))}/100"
-            if last_rep_score >= 80:
+            score_text = f"Score: {last_rep_score:.1f}/10"
+            if last_rep_score >= 8:
                 score_color = (0, 200, 0)
-            elif last_rep_score >= 60:
+            elif last_rep_score >= 6:
                 score_color = (0, 180, 255)
             else:
                 score_color = (0, 0, 255)
@@ -724,34 +764,49 @@ def process_video(
                     print(f"[REP SKIPPED] final {profile.key} {full_rep_reason}", flush=True)
                 analyzer.reset()  # type: ignore[attr-defined]
             else:
+                if profile.key == "bicep_curl" and completed_angles:
+                    rep_min = float(min(completed_angles))
+                    if rep_min > 60.0:
+                        if debug:
+                            print(f"[REP SKIPPED] final bicep_curl top angle above 60 (min={rep_min:.1f})", flush=True)
+                        analyzer.reset()  # type: ignore[attr-defined]
+                        completed_angles = []
+
                 analyzer.collect(None, None)  # type: ignore[attr-defined]  # Empty collect to mark completion
                 try:
                     feedback = analyzer.evaluate()  # type: ignore[attr-defined]
                     last_feedback = feedback[:3]  # Show last 3 lines
                     rep_score = score_rep(feedback)
+
+                    if profile.key == "bicep_curl" and completed_angles:
+                        angle_score = _bicep_angle_quality_score(completed_angles)
+                        rep_score["score"] = round(0.55 * float(rep_score.get("score", 0)) + 0.45 * angle_score, 1)
                     
                     # ─── EXERCISE-SPECIFIC REP VALIDATION ──────────────────────
                     should_count_rep, validation_reason = ExerciseRepValidator.validate_rep(
                         profile.key, rep_score, feedback
                     )
 
-                    reps += 1
                     if not should_count_rep:
                         rep_score["is_valid"] = False
                         invalid_reasons = set(rep_score.get("invalid_reasons", []))
                         invalid_reasons.add("rep_rejected")
                         rep_score["invalid_reasons"] = sorted(invalid_reasons)
-
-                    rep_reports.append({
-                        "rep_number": reps,
-                        "feedback": feedback,
-                        "counted_valid": bool(should_count_rep),
-                        "validation_reason": validation_reason,
-                        **rep_score,
-                    })
-                    last_rep_score = rep_score.get("score")
-                    last_rep_valid = bool(should_count_rep)
-                    last_validation_reason = validation_reason
+                        last_rep_score = rep_score.get("score")
+                        last_rep_valid = False
+                        last_validation_reason = validation_reason
+                    else:
+                        reps += 1
+                        rep_reports.append({
+                            "rep_number": reps,
+                            "feedback": feedback,
+                            "counted_valid": True,
+                            "validation_reason": validation_reason,
+                            **rep_score,
+                        })
+                        last_rep_score = rep_score.get("score")
+                        last_rep_valid = True
+                        last_validation_reason = validation_reason
 
                     if debug:
                         print(f"\n{'='*50}")
@@ -801,7 +856,7 @@ def process_video(
     elif profile.key == "squat":
         if reps > 0:
             avg_score = session_summary.get("avg_score", 0)
-            if avg_score < 70:
+            if avg_score < 7:
                 session_coaching_tips.append("Work on squat depth - aim for at least parallel (hips level with knees).")
         if frame_count > 0 and (readiness_rejected_frames / frame_count) > 0.3:
             session_coaching_tips.append("Ensure you're starting from a standing position between reps.")
@@ -809,35 +864,35 @@ def process_video(
     elif profile.key == "lunge":
         if reps > 0:
             avg_score = session_summary.get("avg_score", 0)
-            if avg_score < 70:
+            if avg_score < 7:
                 session_coaching_tips.append("Maintain better balance - front knee should align over ankle.")
         session_coaching_tips.append("Keep torso upright with minimal forward lean.")
     
     elif profile.key == "bicep_curl":
         if reps > 0:
             avg_score = session_summary.get("avg_score", 0)
-            if avg_score < 70:
+            if avg_score < 7:
                 session_coaching_tips.append("Control the weight - avoid using momentum (jerky motions).")
         session_coaching_tips.append("Fully extend and contract arms for complete range of motion.")
     
     elif profile.key == "shoulder_press":
         if reps > 0:
             avg_score = session_summary.get("avg_score", 0)
-            if avg_score < 70:
+            if avg_score < 7:
                 session_coaching_tips.append("Lock out fully at the top - extend elbows completely overhead.")
         session_coaching_tips.append("Maintain core stability - avoid excessive lower back arching.")
     
     elif profile.key == "situp":
         if reps > 0:
             avg_score = session_summary.get("avg_score", 0)
-            if avg_score < 70:
+            if avg_score < 7:
                 session_coaching_tips.append("Use your core, not your neck - don't pull yourself up by your head.")
         session_coaching_tips.append("Go through full range of motion - lie back completely and sit up fully.")
     
     elif profile.key == "mountain_climber":
         if reps > 0:
             avg_score = session_summary.get("avg_score", 0)
-            if avg_score < 70:
+            if avg_score < 7:
                 session_coaching_tips.append("Keep hips level in plank - no sagging or piking.")
         session_coaching_tips.append("Drive knees towards chest with controlled, rhythmic motion.")
 

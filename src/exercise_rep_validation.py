@@ -13,7 +13,7 @@ class ExerciseRepValidator:
         issues = set(rep_score.get("issues", []))
         invalid_reasons = set(rep_score.get("invalid_reasons", []))
         warnings = set(rep_score.get("warnings", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
@@ -21,16 +21,16 @@ class ExerciseRepValidator:
         if "bent_knees" in issues or "bent_knees" in invalid_reasons:
             return False, "Knees must be locked for valid rep"
 
-        # Strict straight-back requirement for pushups.
-        if "hip_sag" in issues or "hip_sag" in warnings:
+        # Keep strict rejection only for severe hip sag (issue-level), not light warning noise.
+        if "hip_sag" in issues:
             return False, "Posture invalid: keep back straight (hips sagging)"
 
-        # Pike also indicates non-neutral body line.
-        if "pike_position" in issues or "pike_position" in warnings:
+        # Pike warning alone should not invalidate an otherwise good rep.
+        if "pike_position" in issues:
             return False, "Posture invalid: keep body in a straight plank"
         
         # Sagging hips + poor score = form breakdown
-        if "sagging_hips" in issues and score < 70:
+        if "sagging_hips" in issues and score < 6:
             return False, "Hips sagging too much - maintain straight body"
         
         # No body alignment = not a pushup
@@ -42,11 +42,11 @@ class ExerciseRepValidator:
             return False, "Elbows hyperextending - adjust depth"
         
         # Too many major issues
-        if len(issues) >= 3 or score < 50:
+        if len(issues) >= 4 or score < 4.5:
             return False, "Form breakdown - too many issues"
         
         # ACCEPT CONDITIONS
-        if score >= 60:  # Lenient threshold
+        if score >= 5.5:  # Lenient threshold
             return True, "Rep counted - acceptable form"
         
         return rep_score.get("is_valid", True), "Form analysis"
@@ -56,12 +56,12 @@ class ExerciseRepValidator:
         """Squat rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
         warnings = set(rep_score.get("warnings", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
         # No depth data = can't verify
-        if issues.intersection(no_data_keys) or score < 40:
+        if issues.intersection(no_data_keys) or score < 4:
             return False, "Cannot verify depth"
         
         # Extremely shallow
@@ -74,7 +74,7 @@ class ExerciseRepValidator:
         
         # ACCEPT CONDITIONS
         # Allow partial reps but penalize in score
-        if score >= 50:
+        if score >= 5:
             return True, "Rep counted"
         
         return False, "Form too poor"
@@ -83,11 +83,11 @@ class ExerciseRepValidator:
     def should_count_lunge(rep_score, feedback):
         """Lunge rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if issues.intersection(no_data_keys) or score < 40:
+        if issues.intersection(no_data_keys) or score < 4:
             return False, "Cannot verify form"
         
         # Unstable lunge
@@ -98,7 +98,7 @@ class ExerciseRepValidator:
             return False, "Too many form issues"
         
         # ACCEPT CONDITIONS
-        if score >= 50:
+        if score >= 5:
             return True, "Rep counted"
         
         return False, "Form too poor"
@@ -107,11 +107,11 @@ class ExerciseRepValidator:
     def should_count_bicep_curl(rep_score, feedback):
         """Bicep curl rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if issues.intersection(no_data_keys) or score < 40:
+        if issues.intersection(no_data_keys) or score < 4:
             return False, "Cannot verify form"
         
         # No full extension AT LEAST
@@ -126,7 +126,7 @@ class ExerciseRepValidator:
             return False, "Too many form issues"
         
         # ACCEPT CONDITIONS
-        if score >= 50:
+        if score >= 5:
             return True, "Rep counted"
         
         return False, "Form too poor"
@@ -135,11 +135,11 @@ class ExerciseRepValidator:
     def should_count_shoulder_press(rep_score, feedback):
         """Shoulder press rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if issues.intersection(no_data_keys) or score < 40:
+        if issues.intersection(no_data_keys) or score < 4:
             return False, "Cannot verify form"
         
         # No lockout = not a valid press
@@ -147,14 +147,14 @@ class ExerciseRepValidator:
             return False, "Must lock out fully overhead"
         
         # Extreme lower back arching
-        if "back_arch" in issues and score < 55:
+        if "back_arch" in issues and score < 5.5:
             return False, "Excessive lower back arch"
         
         if len(issues) >= 3:
             return False, "Too many form issues"
         
         # ACCEPT CONDITIONS
-        if score >= 55:  # Slightly stricter for press
+        if score >= 5.5:  # Slightly stricter for press
             return True, "Rep counted"
         
         return False, "Form too poor"
@@ -163,11 +163,11 @@ class ExerciseRepValidator:
     def should_count_situp(rep_score, feedback):
         """Sit-up rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if issues.intersection(no_data_keys) or score < 40:
+        if issues.intersection(no_data_keys) or score < 4:
             return False, "Cannot verify form"
         
         # Incomplete range = not full rep
@@ -175,14 +175,14 @@ class ExerciseRepValidator:
             return False, "Incomplete range of motion"
         
         # Neck pulling instead of core work
-        if "neck_pull" in issues and score < 60:
+        if "neck_pull" in issues and score < 6:
             return False, "Using neck instead of core"
         
         if len(issues) >= 3:
             return False, "Too many form issues"
         
         # ACCEPT CONDITIONS
-        if score >= 50:
+        if score >= 5:
             return True, "Rep counted"
         
         return False, "Form too poor"
@@ -191,11 +191,11 @@ class ExerciseRepValidator:
     def should_count_mountain_climber(rep_score, feedback):
         """Mountain climber rep validation"""
         issues = set(rep_score.get("invalid_reasons", []))
-        score = rep_score.get("score", 100)
+        score = rep_score.get("score", 10)
         no_data_keys = {"no_valid_data", "not_pushup_pattern", "no_body_alignment_data"}
         
         # REJECT CONDITIONS
-        if issues.intersection(no_data_keys) or score < 40:
+        if issues.intersection(no_data_keys) or score < 4:
             return False, "Cannot verify form"
         
         # Sagging hips = not in plank
@@ -203,14 +203,14 @@ class ExerciseRepValidator:
             return False, "Hips must stay level in plank"
         
         # Not actually doing mountain climbers
-        if "slow_movement" in issues and score < 50:
+        if "slow_movement" in issues and score < 5:
             return False, "Movement too slow"
         
         if len(issues) >= 3:
             return False, "Too many form issues"
         
         # ACCEPT CONDITIONS
-        if score >= 50:
+        if score >= 5:
             return True, "Rep counted"
         
         return False, "Form too poor"

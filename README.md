@@ -163,7 +163,7 @@ video_processor.py (Main)
 
 ✅ **Comprehensive Form Analysis**
 
-- Quality score (0-100) per rep
+- Quality score (0-10) per rep
 - Elbow, hip, knee angle measurements
 - Injury risk assessment
 - Specific corrections for each issue

@@ -139,47 +139,82 @@ def classify_feedback_message(message):
 	return None, "neutral"
 
 
+def classify_rep(score, critical_count, major_warning_count, minor_warning_count, positive_count):
+	"""
+	Classify rep into one of four categories based on form quality.
+	
+	Returns one of: "Perfect", "Acceptable", "Poor", "Dangerous"
+	"""
+	# DANGEROUS: Safety risk - critical issues detected
+	if critical_count > 0:
+		return "Dangerous"
+	
+	# PERFECT: Excellent form - high score, minimal issues, positive feedback
+	if score >= 9 and major_warning_count == 0 and minor_warning_count <= 1 and positive_count > 0:
+		return "Perfect"
+	
+	# ACCEPTABLE: Valid rep with good form - moderate score, some minor issues but safe
+	if score >= 6 and critical_count == 0 and major_warning_count <= 1:
+		return "Acceptable"
+	
+	# POOR: Low quality but not dangerous - multiple issues but no critical safety concerns
+	if score < 6 and critical_count == 0:
+		return "Poor"
+	
+	# Default to Poor if score very low even with warnings
+	return "Poor"
+
+
 def score_rep(feedback_messages):
 	"""Compute lenient score and validity from rep feedback strings."""
-	score = 100
+	score = 10
 	issues = []
 	warnings = []
 	critical_count = 0
 	major_warning_count = 0
+	minor_warning_count = 0
+	positive_count = 0
 	invalid_reasons = []
 
 	for message in _iter_feedback_messages(feedback_messages):
 		issue_key, severity = classify_feedback_message(message)
 
 		if severity == "critical":
-			score -= 35
+			score -= 3.5
 			critical_count += 1
 			if issue_key:
 				issues.append(issue_key)
 				invalid_reasons.append(issue_key)
 		elif severity == "major_warning":
-			score -= 12
+			score -= 1.2
 			major_warning_count += 1
 			if issue_key:
 				issues.append(issue_key)
 				warnings.append(issue_key)
 		elif severity == "minor_warning":
-			score -= 6
+			score -= 0.6
+			minor_warning_count += 1
 			if issue_key:
 				issues.append(issue_key)
 				warnings.append(issue_key)
+		elif severity == "positive":
+			positive_count += 1
 
-	score = max(0, min(100, score))
+	score = max(0, min(10, score))
 
 	# Invalidate only when form is severely off, not for normal human variation.
-	form_breakdown = major_warning_count >= 3 and score < 55
+	form_breakdown = major_warning_count >= 3 and score < 5.5
 	if form_breakdown:
 		invalid_reasons.append("form_breakdown")
 
 	is_valid = (critical_count == 0) and (not form_breakdown)
+	
+	# Classify rep into four-tier system
+	classification = classify_rep(score, critical_count, major_warning_count, minor_warning_count, positive_count)
 
 	return {
 		"score": score,
+		"classification": classification,
 		"is_valid": is_valid,
 		"issues": sorted(set(issues)),
 		"warnings": sorted(set(warnings)),
@@ -196,12 +231,30 @@ def summarize_session(rep_reports):
 			"invalid_reps": 0,
 			"issue_counts": {},
 			"top_issues": [],
+			"classification_counts": {
+				"perfect": 0,
+				"acceptable": 0,
+				"poor": 0,
+				"dangerous": 0,
+			},
 		}
 
 	total = len(rep_reports)
 	valid_reps = sum(1 for rep in rep_reports if rep.get("is_valid"))
 	invalid_reps = total - valid_reps
 	avg_score = round(sum(rep.get("score", 0) for rep in rep_reports) / total, 1)
+
+	# Count classifications
+	classification_counts = {
+		"perfect": 0,
+		"acceptable": 0,
+		"poor": 0,
+		"dangerous": 0,
+	}
+	for rep in rep_reports:
+		classification = rep.get("classification", "poor").lower()
+		if classification in classification_counts:
+			classification_counts[classification] += 1
 
 	issue_counter = Counter()
 	for rep in rep_reports:
@@ -213,4 +266,5 @@ def summarize_session(rep_reports):
 		"invalid_reps": invalid_reps,
 		"issue_counts": dict(issue_counter),
 		"top_issues": [k for k, _ in issue_counter.most_common(3)],
+		"classification_counts": classification_counts,
 	}
